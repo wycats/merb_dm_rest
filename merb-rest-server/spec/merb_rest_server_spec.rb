@@ -47,12 +47,10 @@ describe "MerbRestServer (module)" do
   
   it "should have :routes and :named_routes properties" do
     MerbRestServer.routes.should_not be_empty
-    MerbRestServer.named_routes[:merb_rest_server_index].should be_kind_of(Merb::Router::Route)
   end
 
   it "should have an url helper method for slice-specific routes" do
-    MerbRestServer.url(:controller => 'main', :action => 'show', :format => 'html').should == "/merb_rest_server/main/show.html"
-    MerbRestServer.url(:merb_rest_server_index, :format => 'html').should == "/merb_rest_server/index.html"
+    MerbRestServer.url(:controller => 'main', :action => 'show', :format => 'html').should == "/rest/main/show.html"
   end
   
   it "should have a config property (Hash)" do
