@@ -4,7 +4,11 @@ class MerbRestServer::Rest < MerbRestServer::Application
     render
   end
   
-  def show
+  def get
+    ""
+  end
+  
+  def post
     ""
   end
   
