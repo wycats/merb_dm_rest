@@ -18,6 +18,8 @@ Merb.start_environment(
   :session_store => 'memory'
 )
 
+require "#{File.dirname(__FILE__)}/setup-database"
+
 module Merb
   module Test
     module SliceHelper

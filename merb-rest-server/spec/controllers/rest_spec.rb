@@ -25,6 +25,7 @@ describe "MerbRestServer::Rest (controller)" do
     it "routes GET /rest/foo/1 to Rest#show :id => 1" do
       controller = get("/rest/foo/1")
       controller.action_name.should == "get"
+      controller.assigns(:object).should == Foo.get!(1)
       controller.params[:id].should == "1"
     end    
   end

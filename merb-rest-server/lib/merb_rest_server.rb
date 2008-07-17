@@ -59,9 +59,12 @@ if defined?(Merb::Plugins)
         nests << [parts.shift] unless parts.empty?
         
         if nests.last.last
-          {:controller => "merb_rest_server/rest", :action => req.method.to_s, :id => nests.last.last}
+          { :controller => "merb_rest_server/rest", 
+            :action => req.method.to_s, 
+            :id => nests.last.last}
         else
-          {:controller => "merb_rest_server/rest", :action => "index"}
+          { :controller => "merb_rest_server/rest", 
+            :action => "index"}
         end
       end
       # scope.match('/index.:format').to(:controller => 'main', :action => 'index').name(:merb_rest_server_index)
