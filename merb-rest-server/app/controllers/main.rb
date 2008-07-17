@@ -1,4 +1,4 @@
-class MerbRestServer::Main < MerbRestServer::Application
+class MerbRestServer::Rest < MerbRestServer::Application
   
   def index
     render

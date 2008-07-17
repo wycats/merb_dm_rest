@@ -22,8 +22,8 @@ if defined?(Merb::Plugins)
     
     # Slice metadata
     self.description = "MerbRestServer is a chunky Merb slice!"
-    self.version = "0.0.1"
-    self.author = "YOUR NAME"
+    self.version = "0.5.0"
+    self.author = "Yehuda Katz"
     
     # Stub classes loaded hook - runs before LoadClasses BootLoader
     # right after a slice's classes have been loaded internally.

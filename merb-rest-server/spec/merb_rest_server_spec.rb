@@ -41,8 +41,8 @@ describe "MerbRestServer (module)" do
   
   it "should have metadata properties" do
     MerbRestServer.description.should == "MerbRestServer is a chunky Merb slice!"
-    MerbRestServer.version.should == "0.0.1"
-    MerbRestServer.author.should == "YOUR NAME"
+    MerbRestServer.version.should == "0.5.0"
+    MerbRestServer.author.should == "Yehuda Katz"
   end
   
   it "should have :routes and :named_routes properties" do
