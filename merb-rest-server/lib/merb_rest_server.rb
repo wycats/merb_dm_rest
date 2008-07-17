@@ -54,7 +54,7 @@ if defined?(Merb::Plugins)
     def self.setup_router(scope)
       # example of a named route
       scope.match(%r{(.*)}).defer_to do |req, params| 
-        
+        {:controller => "merb_rest_server/rest", :action => "show"}
       end
       # scope.match('/index.:format').to(:controller => 'main', :action => 'index').name(:merb_rest_server_index)
     end
