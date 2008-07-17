@@ -1,7 +1,7 @@
 class MerbRestServer::Rest < MerbRestServer::Application
   
   def index
-    render
+    ""
   end
   
   def get
@@ -9,6 +9,14 @@ class MerbRestServer::Rest < MerbRestServer::Application
   end
   
   def post
+    ""
+  end
+  
+  def put
+    ""
+  end
+  
+  def delete
     ""
   end
   

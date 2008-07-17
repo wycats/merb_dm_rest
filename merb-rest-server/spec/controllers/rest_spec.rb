@@ -12,16 +12,45 @@ describe "MerbRestServer::Rest (controller)" do
     Merb::Router.reset! if standalone?
   end
 
-  it "routes GET /rest/foo/1 to Rest#show :id => 1" do
-    controller = get("/rest/foo/1")
-    controller.action_name.should == "get"
-    controller.params[:id].should == "1"
+  require File.dirname(__FILE__) + '/../spec_helper'
+
+  describe "GET index" do
+    it "routes GET /rest/foo to Rest#index" do
+      controller = get("/rest/foo")
+      controller.action_name.should == "index"
+    end
+  end
+
+  describe "GET" do
+    it "routes GET /rest/foo/1 to Rest#show :id => 1" do
+      controller = get("/rest/foo/1")
+      controller.action_name.should == "get"
+      controller.params[:id].should == "1"
+    end    
   end
   
-  it "routes POST /rest/foo/1 to Rest#update :id => 1" do
-    controller = post("/rest/foo/1")
-    controller.action_name.should == "post"
-    controller.params[:id].should == "1"
+  describe "POST" do
+    it "routes POST /rest/foo/1 to Rest#update :id => 1" do
+      controller = post("/rest/foo/1")
+      controller.action_name.should == "post"
+      controller.params[:id].should == "1"
+    end    
+  end
+  
+  describe "PUT" do
+    it "routes PUT /rest/foo/1 to Rest#update :id => 1" do
+      controller = put("/rest/foo/1")
+      controller.action_name.should == "put"
+      controller.params[:id].should == "1"
+    end    
+  end
+
+  describe "DELETE" do
+    it "routes DELETE /rest/foo/1 to Rest#update :id => 1" do
+      controller = delete("/rest/foo/1")
+      controller.action_name.should == "delete"
+      controller.params[:id].should == "1"
+    end
   end
   
   # it "should have access to the slice module" do
