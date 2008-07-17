@@ -22,12 +22,22 @@ describe "MerbRestServer::Rest (controller)" do
   end
 
   describe "GET" do
+    before do
+      @controller = get("/rest/foo/1", {}, :http_accept => "application/json")
+    end
+    
     it "routes GET /rest/foo/1 to Rest#show :id => 1" do
-      controller = get("/rest/foo/1")
-      controller.action_name.should == "get"
-      controller.assigns(:object).should == Foo.get!(1)
-      controller.params[:id].should == "1"
-    end    
+      @controller.action_name.should == "get"
+      @controller.params[:id].should == "1"
+    end
+    
+    it "assigns the object as Foo.get!(1)" do
+      @controller.assigns(:object).should == Foo.get!(1)
+    end
+    
+    it "returns the object's attributes as JSON" do
+      @controller.body.should == Foo.get!(1).to_json
+    end
   end
   
   describe "POST" do
