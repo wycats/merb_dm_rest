@@ -53,7 +53,10 @@ if defined?(Merb::Plugins)
     #   to avoid potential conflicts with global named routes.
     def self.setup_router(scope)
       # example of a named route
-      scope.match('/index.:format').to(:controller => 'main', :action => 'index').name(:merb_rest_server_index)
+      scope.match(%r{(.*)}).defer_to do |req, params| 
+        
+      end
+      # scope.match('/index.:format').to(:controller => 'main', :action => 'index').name(:merb_rest_server_index)
     end
     
   end
