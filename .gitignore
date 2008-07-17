@@ -1,1 +1,3 @@
 *.tmproj
+*/pkg
+*/log

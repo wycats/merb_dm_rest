@@ -1,6 +1,10 @@
 require 'rubygems'
 require 'rake/gempackagetask'
 require 'rubygems/specification'
+require 'spec/rake/spectask'
+require 'merb-core/version'
+require 'merb-core/test/tasks/spectasks'
+require 'merb-core/tasks/merb_rake_helper'
 require 'date'
 
 GEM = "merb-rest-client"
