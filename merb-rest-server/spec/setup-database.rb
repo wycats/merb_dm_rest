@@ -15,4 +15,6 @@ end
 
 Foo.auto_migrate!
 
-Foo.create(:name => "Hello")
+Foo.create(:name => "Mock1")
+Foo.create(:name => "Mock2")
+Foo.create(:name => "Mock3")

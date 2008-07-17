@@ -60,19 +60,14 @@ if defined?(Merb::Plugins)
         nests = parts.map { [parts.shift, parts.shift] }
         nests << [parts.shift] unless parts.empty?
         
-        if nests.last.last
-          { :controller => "merb_rest_server/rest", 
-            :action => req.method.to_s, 
-            :type => nests.last.first,
-            :nests => nests[0..-2],
-            :id => nests.last.last,
-            :format => format}
-        else
-          { :controller => "merb_rest_server/rest", 
-            :nests => nests[0..-2],
-            :action => "index",
-            :format => format}
-        end
+        params = req.params.merge({ :controller => "merb_rest_server/rest", 
+          :type => nests.last.first,
+          :nests => nests[0..-2],
+          :format => format})
+          
+        params.merge!(:action => nests.last.last ? req.method.to_s : "index")
+        params.merge!(:id => nests.last.last) if nests.last.last
+        params
       end
       # scope.match('/index.:format').to(:controller => 'main', :action => 'index').name(:merb_rest_server_index)
     end

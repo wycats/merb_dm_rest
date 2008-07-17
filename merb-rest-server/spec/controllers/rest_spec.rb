@@ -15,28 +15,58 @@ describe "MerbRestServer::Rest (controller)" do
   require File.dirname(__FILE__) + '/../spec_helper'
 
   describe "GET index" do
-    it "routes GET /rest/foo to Rest#index" do
-      controller = get("/rest/foo")
-      controller.action_name.should == "index"
+    describe "plain index" do
+      before do
+        @controller = get("/rest/foo", {}, :http_accept => "application/json")
+      end
+    
+      it "routes GET /rest/foo to Rest#index" do
+        @controller.action_name.should == "index"
+      end
+    
+      it "returns all of the resources" do
+        @controller.body.should == Foo.all.to_json
+      end
+    end
+    
+    describe "index with query parameters" do
+      it "provides the objects that match ids" do
+        controller = get("/rest/foo", {:id => "1,2"}, :http_accept => "application/json")
+        controller.body.should == Foo.all(:id => [1,2]).to_json
+      end
+      
+      it "provides the objects that match other params" do
+        controller = get("/rest/foo", {:name => "Mock1"}, :http_accept => "application/json")
+        controller.body.should == Foo.all(:name => "Mock1").to_json
+      end
     end
   end
 
   describe "GET" do
-    before do
-      @controller = get("/rest/foo/1", {}, :http_accept => "application/json")
+    describe "when the resource exists" do
+      before do
+        @controller = get("/rest/foo/1", {}, :http_accept => "application/json")
+      end
+    
+      it "routes GET /rest/foo/1 to Rest#show :id => 1" do
+        @controller.action_name.should == "get"
+        @controller.params[:id].should == "1"
+      end
+    
+      it "assigns the object as Foo.get!(1)" do
+        @controller.assigns(:object).should == Foo.get!(1)
+      end
+    
+      it "returns the object's attributes as JSON" do
+        @controller.body.should == Foo.get!(1).to_json
+      end
     end
     
-    it "routes GET /rest/foo/1 to Rest#show :id => 1" do
-      @controller.action_name.should == "get"
-      @controller.params[:id].should == "1"
-    end
-    
-    it "assigns the object as Foo.get!(1)" do
-      @controller.assigns(:object).should == Foo.get!(1)
-    end
-    
-    it "returns the object's attributes as JSON" do
-      @controller.body.should == Foo.get!(1).to_json
+    describe "when the resource doesn't exist" do
+      it "returns a 404" do
+        @controller = get("/rest/foo/10", {}, :http_accept => "application/json")
+        @controller.status.should == 404
+      end
     end
   end
   
