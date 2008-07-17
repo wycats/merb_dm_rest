@@ -14,6 +14,14 @@ describe "MerbRestServer::Rest (controller)" do
 
   require File.dirname(__FILE__) + '/../spec_helper'
 
+  describe "Incorrect type" do
+    it "returns a 400 error (Bad Request)" do
+      controller = get("/rest/zoo", {}, :http_accept => "application/json")
+      controller.status.should == 400
+      controller.body.should == "{}"
+    end
+  end
+
   describe "GET index" do
     describe "plain index" do
       before do
@@ -38,6 +46,20 @@ describe "MerbRestServer::Rest (controller)" do
       it "provides the objects that match other params" do
         controller = get("/rest/foo", {:name => "Mock1"}, :http_accept => "application/json")
         controller.body.should == Foo.all(:name => "Mock1").to_json
+      end
+      
+      it "supports providing the type of query" do
+        controller = get("/rest/foo", {:name => "Mock%", :query_type => "like"}, :http_accept => "application/json")
+        controller.body.should == Foo.all(:name.like => "Mock%").to_json
+      end
+    end
+  end
+
+  describe "OPTIONS on a resource" do
+    describe "when the resource exists" do
+      it "returns back the schema in JSON form" do
+        @controller = request("/rest/foo/1", {}, :http_accept => "application/json", :request_method => "OPTIONS")
+        @controller.body.should == Foo.properties.inject({}) {|a,x| a[x.name] = x.type; a }.to_json        
       end
     end
   end
