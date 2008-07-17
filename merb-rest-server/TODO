@@ -1,0 +1,15 @@
+TODO:
+
+- Fix MerbRestServer.description and MerbRestServer.version
+- Fix LICENSE with your name
+- Fix Rakefile with your name and contact info
+- Add your code to lib/merb_rest_server.rb
+- Add your Merb rake tasks to lib/merb_rest_server/merbtasks.rb
+
+Remove anything that you don't need:
+
+- app/controllers/main.rb MerbRestServer::Main controller
+- app/views/layout/merb_rest_server.html.erb
+- spec/controllers/main_spec.rb controller specs
+- public/* any public files
+- stubs/* any stub files

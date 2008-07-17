@@ -1,0 +1,4 @@
+merb-rest-client
+================
+
+A gem that provides a DataMapper client to Merb::Rest::Server
