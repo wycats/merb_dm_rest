@@ -23,18 +23,31 @@ describe "DataMapper::Adatapers::MerbRest" do
     
   
   before(:all) do
-    DataMapper.setup(:default, "merb_rest://example.com")
-    @repository = repository(:default)
+    DataMapper.setup(:default, "sqlite3::memory:")
+    repository(:default).auto_migrate!
+    
+    DataMapper.setup(:merb_rest, "merb_rest://example.com")
+    @repository = repository(:merb_rest)
     @adapter = @repository.adapter
+    
+    1.upto(10) do |n|
+      Post.create(:title => "title #{n}", :body => "body #{n}")
+    end
   end
-  
+    
   it "should handle ssl"
   it "should setup an connection"
   it "should setup a connection with basic auth"
   
   describe "create" do
     it{@adapter.should respond_to(:create)}
-    it "should send a post to the Post resource with parameters"    
+    it "should send a post to the Post resource with parameters" do
+      pending
+      params = {:post => {:title => "created post", :body => "created_body"}}
+      RestClient.should_receive(:post).with("http://example.com/posts", params.to_params)
+      Post.create(params[:post])
+    end
+    
     it "should return the number of created items"   
     it "should return 0 if a post does not save" 
   end

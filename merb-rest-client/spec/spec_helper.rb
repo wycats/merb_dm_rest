@@ -1,4 +1,10 @@
-require 'rubygems'
-require 'dm-core'
 $TESTING=true
-$:.push File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'rubygems'
+require 'spec'
+require 'merb-core'
+
+require File.dirname(__FILE__) / ".." / "lib" / "merb-rest-client"
+
+# Spec::Runner.configure do |config|
+# end
