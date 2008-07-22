@@ -50,7 +50,7 @@ module DataMapper
           result = api_get(resource_name(query).to_s, parameters)
           hash = parse_results(result.body)     
           
-          collection.load([hash].flatten)
+          collection.load(hash)
         end
       end
       

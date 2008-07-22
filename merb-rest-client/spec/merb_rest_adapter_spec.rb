@@ -69,7 +69,7 @@ describe "DataMapper::Adatapers::MerbRest" do
   
   describe "read_many" do
     before(:all) do
-      @hash = {"title" => "title", "body" => "body", "id" => 3}
+      @hash = [{"title" => "title", "body" => "body", "id" => 3}]
       @json = JSON.generate(@hash)
 
     end
