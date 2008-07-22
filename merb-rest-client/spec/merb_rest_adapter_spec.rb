@@ -1,22 +1,33 @@
 require File.join(File.dirname(__FILE__),  "spec_helper")
 
+require 'dm-serializer'
+
 describe "DataMapper::Adatapers::MerbRest" do
   
   class Post 
     include DataMapper::Resource
+    
+    def self.default_repository_name
+      :merb_rest
+    end
+    
     property :id, Serial
     property :title, String
-    property :body, Text
+    property :body, Text, :lazy => false
     
     has n, :comments
   end
   
   class Comment
     include DataMapper::Resource
+    
+    def self.default_repository_name
+      :merb_rest
+    end
 
     property :id, Serial
     property :title, String
-    property :body, Text
+    property :body, Text, :lazy => false
     
     belongs_to :post
   end
@@ -33,6 +44,10 @@ describe "DataMapper::Adatapers::MerbRest" do
     1.upto(10) do |n|
       Post.create(:title => "title #{n}", :body => "body #{n}")
     end
+  end
+  
+  before(:each) do
+
   end
     
   it "should handle ssl"
@@ -53,10 +68,56 @@ describe "DataMapper::Adatapers::MerbRest" do
   end
   
   describe "read_many" do
+    before(:all) do
+      @hash = {"title" => "title", "body" => "body", "id" => 3}
+      @json = JSON.generate(@hash)
+
+    end
+    
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+    end
+    
     it{@adapter.should respond_to(:read_many)}
-    it "should send a get request to the Post resource"
-    it "should send a get request to the Post resource with the requried parameters"
-    it "should get all the objects"
+    
+    it "should send a get request to the Post resource" do
+      @adapter.should_receive(:api_get).with("posts", {"order" => ["id.asc"], "fields" => [:id, :title, :body]}).and_return(@response)
+      Post.all.inspect
+    end
+    
+    it "should return instantiated objects" do
+      @adapter.should_receive(:api_get).with("posts", {"order" => ["id.asc"], "fields" => [:id, :title, :body]}).and_return(@response)
+      @adapter.should_receive(:parse_results).and_return(@hash)
+      Post.all.inspect
+    end
+    
+    it "should load all the objects" do
+      Post.all.each{|p| p.should be_a_kind_of(Post)}
+    end
+    
+    describe "read many with conditions" do
+      
+      it "should use a get with conditional parameters" do
+        @adapter.should_receive(:api_get).with("posts", { "title.like" => "tit%", 
+                                                          "body.eql" => "body",
+                                                          "order" => ["id.asc"], 
+                                                          "fields" => [:id, :title, :body]
+                                                          }).and_return(@response)
+        Post.all(:title.like => "tit%", :body.eql => "body").inspect
+      end
+      
+      it "should add a fields option for fields" do
+        pending "There is an issue with specifying the :fields conditions with dm :|"
+        @adapter.should_receive(:api_get).with("posts", "title.like"  => "tit%", 
+                                                        "fields"      => [:body, :id],
+                                                        "order"       => ["id.asc"], 
+                                                        "fields"      => [:id, :body]).and_return(@response)
+        Post.all(:title.like => "tit%", :fields => [:id, :body]).inspect
+      end
+    end
+    
   end
   
   describe "read_one" do
@@ -90,6 +151,20 @@ describe "DataMapper::Adatapers::MerbRest" do
     it "should get all records with a lt matcher"
     it "shoudl get all records with a lte matcher"
     it "should get records with multiple matchers"    
+  end
+
+  describe "formats" do
+    describe "json" do
+      before do
+        @post = Post.new(:title => "title", :body => "body", :id => 3)
+        @post_json = @post.to_json
+      end
+      
+      it "should parse the json of an object" do
+        result = @adapter.send(:parse_results, @post_json)
+        result.should == {"title" => "title", "body" => "body", "id" => 3}
+      end
+    end
   end
 
   it "should order records"

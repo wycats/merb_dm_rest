@@ -5,38 +5,56 @@ module DataMapper
       private
       def initialize(name, uri_or_options)
         super
+        @format = :json
         @uri = normalize_uri(uri_or_options)
       end
       
       public
       def create(resources)
-        created = 0
-        resources.each do |resource|
-          repository = resource.repository
-          model      = resource.model
-          attributes = resource.dirty_attributes
+        # created = 0
+        # resources.each do |resource|
+        #   repository = resource.repository
+        #   model      = resource.model
+        #   attributes = resource.dirty_attributes
+        # 
+        #   # TODO: make a model.identity_field method
+        #   identity_field = model.key(repository.name).detect { |p| p.serial? }
+        # 
+        #   paramteters = {resource_name(model) => model.value_paramters }
+        #   # statement = create_statement(repository, model, attributes.keys, identity_field)
+        #   # bind_values = attributes.values
+        # 
+        #   # result = execute(statement, *bind_values)
+        #   result = post(query, URI.escape(parameters.to_params))
+        # 
+        #   if result.to_i == 1
+        #     if identity_field
+        #       identity_field.set!(resource, result.insert_id)
+        #     end
+        #     created += 1
+        #   end
+        # end
+        # created
+      end
 
-          # TODO: make a model.identity_field method
-          identity_field = model.key(repository.name).detect { |p| p.serial? }
+      # def read_one(query)
+      # end
 
-          paramteters = {resource_name(model) => model.value_paramters }
-          # statement = create_statement(repository, model, attributes.keys, identity_field)
-          # bind_values = attributes.values
+      def read_many(query)
+        resource = resource_name(query)
+        Collection.new(query) do |collection|
+          parameters = condition_parameters(query.conditions)
+          parameters.merge!(order_parameters(query.order))
+          parameters.merge!(field_parameters(query.fields))
 
-          # result = execute(statement, *bind_values)
-          result = post(query, URI.escape(parameters.to_params))
-
-          if result.to_i == 1
-            if identity_field
-              identity_field.set!(resource, result.insert_id)
-            end
-            created += 1
-          end
+          result = api_get(resource_name(query).to_s, parameters)
+          hash = parse_results(result.body)     
+          
+          collection.load([hash].flatten)
         end
-        created
       end
       
-      private
+      protected
       def api_get(path, options = {})
         abstract_request( 
                           :class      => Net::HTTP::Get,
@@ -95,36 +113,40 @@ module DataMapper
         else
           res.error!
         end
-      end
-
+      end      
       
-      def fields_parameters
-      end
-      
-      def conditions_parameters
-      end
-      
-      def value_parameters; end
-      
-      def order_parameters
+      def field_parameters(fields)
+        out = []
+        fields.each{|f| out << f.name}
+        {"fields" => out}
       end
       
-      def links_parameters; end
+      def condition_parameters(conditions)
+        out = {}
+        conditions.each do |operator, prop, value|
+          out.merge!("#{prop.name}.#{operator}" => value)
+        end
+        out
+      end
       
-      def group_by_paramters; end 
+      def order_parameters(order)
+        out = []
+        order.each do |ord|
+          out << "#{ord.property.name}.#{ord.direction}"
+        end
+        {"order" => out}
+      end
       
-      def property_to_column_name; end
-      
-      def quote_resource_name; end
+      def parse_results(data)
+        case @format
+        when :json
+          data.blank? ? {} : JSON.parse(data)
+        end
+      end
       
       def resource_name(query) 
        query.model.storage_name(query.repository.name)
-      end
-      
-      def url_for_resource
-        
-      end
-      
+      end      
       
       def normalize_uri(uri_or_options)
         if String === uri_or_options
@@ -141,6 +163,7 @@ module DataMapper
         port =      uri_or_options.fetch(:port)
         database =  uri_or_options.fetch(:database)
         scheme =    uri_or_options.fetch(:scheme, "http")
+        @format =   uri_or_options.fetch(:format, :json)
         query =     uri_or_options.to_a.map { |pair| pair.join('=') }.join('&')
         query = nil if query == ""
 
