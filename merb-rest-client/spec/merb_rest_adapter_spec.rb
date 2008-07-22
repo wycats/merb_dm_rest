@@ -75,7 +75,7 @@ describe "DataMapper::Adatapers::MerbRest" do
   end
   
   describe "delete" do
-    it{@adapter.should respond_to(:delete)}
+    # it{@adapter.should respond_to(:delete)}
     it "should send a delete request to a specific resource"
     it "should send a delete request to the general resource with parameters"
     it "should delete all records"
@@ -95,5 +95,87 @@ describe "DataMapper::Adatapers::MerbRest" do
   it "should order records"
   it "should handle date/time"
   it "should handle date"
+  
+  describe "api methods" do
+    before do
+      @response = mock("response",    :null_object => true)
+      @request  = mock("request",     :null_object => true)
+      @http     = mock("http",        :null_object => true)
+      @conn     = mock("connecction", :null_object => true)
+      Net::HTTP.stub!(:new).and_return(@response)
+      DataMapper.setup(:mr_api, "merb_rest://hassox:password@example.com/rest")
+      @mra = repository(:mr_api).adapter
+    end
+    
+    describe "all_methods", :shared => true do
+      
+      before do
+        @class.stub!(:new).and_return(@request)
+        @request.should_receive(:basic_auth).with("hassox", "password")
+      end
+      
+      it "should recieve a path and a hash" do
+        @class.should_receive(:new).with("/rest/path").and_return(@request)
+        @mra.send(@method, "path", :one => "two")
+      end
+      
+      it "should set the form data as part of the request" do
+        @mra.send(@method, "path", :one => "two")
+      end
+      
+      it "should use a NetHTTP::Post connection" do
+        Net::HTTP.should_receive(:new).and_return(@conn)
+        @conn.should_receive(:start).and_yield(@conn)
+        @conn.should_receive(:request).with(@request).and_return(@response)
+        @mra.send(@method, "path", :one => "two")
+      end
+      
+    end
+    
+    describe "api_post" do
+      before do
+        @method = :api_post
+        @class = Net::HTTP::Post
+      end
+      
+      it_should_behave_like "all_methods"
+    end
+    
+    describe "api_get" do
+      before do
+        @method = :api_get
+        @class = Net::HTTP::Get
+      end
+      
+      it_should_behave_like "all_methods"
+    end
+    
+    describe "api_put" do
+      before do
+        @method = :api_put
+        @class = Net::HTTP::Put
+      end
+      
+      it_should_behave_like "all_methods"
+    end
+    
+    describe "api_delete" do
+      before do
+        @method = :api_delete
+        @class = Net::HTTP::Delete
+      end
+      
+      it_should_behave_like "all_methods"
+    end
+    
+    describe "api_options" do
+      before do
+        @method = :api_options
+        @class = Net::HTTP::Options
+      end
+      
+      it_should_behave_like "all_methods"
+    end
+  end
   
 end
