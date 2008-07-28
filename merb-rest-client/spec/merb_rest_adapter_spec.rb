@@ -27,7 +27,8 @@ describe "DataMapper::Adatapers::MerbRest" do
 
     property :id, Serial
     property :title, String
-    property :body, Text, :lazy => false
+    property :body,  Text
+    property :created_at, DateTime
     
     belongs_to :post
   end
@@ -40,29 +41,62 @@ describe "DataMapper::Adatapers::MerbRest" do
     DataMapper.setup(:merb_rest, "merb_rest://example.com")
     @repository = repository(:merb_rest)
     @adapter = @repository.adapter
-    
-    1.upto(10) do |n|
-      Post.create(:title => "title #{n}", :body => "body #{n}")
-    end
   end
   
 
     
-  it "should handle ssl"
-  it "should setup an connection"
-  it "should setup a connection with basic auth"
+  it "should handle ssl" do
+    @response = mock("response")
+    @request = Net::HTTP::Get.new("http://example.com")
+    DataMapper.setup(:merb_rest_ssl,  :adapter  => "merb_rest",
+                                      :host     => "example.com",
+                                      :scheme   => "https",
+                                      :port     => 443,
+                                      :username => "hassox",
+                                      :password => "password",
+                                      :format   => :json)
+    adapter = repository(:merb_rest_ssl).adapter
+    Net::HTTP::Get.should_receive(:new).and_return(@request)
+    @request.should_receive(:use_ssl=).with(true)
+    Net::HTTP.should_receive(:new).and_return(@response)
+    @response.should_receive(:start).and_return(@response)
+    @response.stub!(:error!).and_return(@response)
+    @response.stub!(:body).and_return(JSON.generate([{:id => 3, :title => "blah"}]))
+    
+    repository(:merb_rest_ssl){Comment.all.each{}}
+  end
+  
+  
+  it "should setup a connection with basic auth" do
+    req = Net::HTTP::Get.new("http://example.com")
+    req.should_receive(:basic_auth)
+    Net::HTTP::Get.should_receive(:new).and_return(req)
+    Net::HTTP.should_receive(:new).and_return(mock("response", :null_object => true, :body => JSON.generate([{:id => 3, :title => "blah"}])))
+    Post.all.each{}
+  end
+  
+
   
   describe "create" do
-    it{@adapter.should respond_to(:create)}
-    it "should send a post to the Post resource with parameters" do
-      pending
-      params = {:post => {:title => "created post", :body => "created_body"}}
-      RestClient.should_receive(:post).with("http://example.com/posts", params.to_params)
-      Post.create(params[:post])
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+      @response.stub!(:code).and_return("200")
     end
     
-    it "should return the number of created items"   
-    it "should return 0 if a post does not save" 
+    it{@adapter.should respond_to(:create)}
+    
+    it "should create a post" do
+      @adapter.should_receive(:api_post).with("posts", "post" => {"title" => "a title", "body" => "a body"}).and_return(@response)
+      Post.create(:title => "a title", :body => "a body")
+    end
+    
+    it "should return the created item" do
+      post = Post.create(:title => "a title", :body => "a body")
+      post.should be_a_kind_of(Post)
+      post.title.should == "a title"
+    end
   end
   
   describe "read_many" do  
@@ -112,6 +146,27 @@ describe "DataMapper::Adatapers::MerbRest" do
       posts[1].body.should == "another body"
     end
     
+    it "should handle date/time" do
+      d = DateTime.now
+      @adapter.should_receive(:api_get) do |location, params|
+        location.should == "comments"
+        params["created_at.eql"].should == d.to_s
+        @response
+      end
+      Comment.all(:created_at => d).each{}
+    end
+
+
+    it "should handle date" do
+      d = Date.today
+      @adapter.should_receive(:api_get) do |location, params|
+        location.should == "comments"
+        params["created_at.eql"].should == d.to_s
+        @response
+      end
+      Comment.all(:created_at => d).each{}
+    end
+
     describe "read many with conditions" do
       
       it "should use a get with conditional parameters" do
@@ -171,7 +226,7 @@ describe "DataMapper::Adatapers::MerbRest" do
     it{@adapter.should respond_to(:read_one)}
     
     it "should send a get request to a specific Post Resource" do
-      @adapter.should_receive(:api_get).with("posts",   "id.eql"  => 3,
+      @adapter.should_receive(:api_get).with("posts",   "id.eql"  => "3",
                                                         "fields"  => ["id", "title", "body"],
                                                         "order"   => ["id.asc"],
                                                         "limit"   => 1
@@ -199,30 +254,74 @@ describe "DataMapper::Adatapers::MerbRest" do
   end
   
   describe "update" do
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+      @response.stub!(:code).and_return("200")
+      @post = Post.new(:title => "my_title", :body => "my_body", :id => 16)
+      @post.stub!(:new_record?).and_return(false)
+      @adapter.stub!(:read_many).and_return([@post])
+    end
+    
     it{@adapter.should respond_to(:update)}
-    it "should send a put requrest to a specific Post resource"
-    it "should send the dirty fields to update"
-    it "should not send non-dirty fields"
-    it "should return the number of updated items"
-    it "should return 0 if an post does not update"
+    
+    it "should send a put request to a specific Post resource" do
+      @adapter.should_receive(:api_put).and_return(@response)
+      @post.update_attributes(:title => "another title")
+    end
+    
+    it "should send the dirty fields to update" do
+      @adapter.should_receive(:api_put) do |location, attributes|
+        location.should == "posts"
+        attributes["title"].should == "yet another"
+        @response
+      end
+      @post.update_attributes(:title => "yet another")
+    end
+    
+    it "should return false if the update didn't happen" do
+      @response.should_receive(:code).and_return("500")
+      @post.update_attributes(:title => "something").should be_false
+    end
+    
+    it "should return true if the update did happen" do
+      @response.should_receive(:code).and_return("200")
+      @post.update_attributes(:body => "something different").should be_true
+    end
   end
   
   describe "delete" do
-    # it{@adapter.should respond_to(:delete)}
-    it "should send a delete request to a specific resource"
-    it "should send a delete request to the general resource with parameters"
-    it "should delete all records"
-  end
-  
-  describe "matchers" do
-    it "should get all records with an eql matcher"
-    it "should get all records with a like matcher"
-    it "shoudl get all records with a not matcher"
-    it "should get all records with a gt matcher"
-    it "should get all records with a gte matcher"
-    it "should get all records with a lt matcher"
-    it "shoudl get all records with a lte matcher"
-    it "should get records with multiple matchers"    
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+      @response.stub!(:code).and_return("200")
+      @post = Post.new(:title => "my_title", :body => "my_body", :id => 16)
+      @post.stub!(:new_record?).and_return(false)
+      @adapter.stub!(:read_many).and_return([@post])
+    end
+    
+    it{@adapter.should respond_to(:delete)}
+    
+    it "should send a delete request to a specific resource" do
+      @adapter.should_receive(:api_delete) do |location, attributes|
+        location.should == "posts"
+        attributes["id.eql"].should == "16"
+        @response
+      end
+      @post.destroy
+    end
+    
+    it "return false if the item is deleted" do
+      @response.should_receive(:code).and_return("500")
+      @post.destroy.should be_false
+    end
+    
+    it "should return true if the item is deleted" do
+      @response.should_receive(:code).and_return("200")
+      @post.destroy.should be_true
+    end
   end
 
   describe "formats" do
@@ -239,10 +338,6 @@ describe "DataMapper::Adatapers::MerbRest" do
     end
   end
 
-  it "should order records"
-  it "should handle date/time"
-  it "should handle date"
-  
   describe "api methods" do
     before do
       @response = mock("response",    :null_object => true)
