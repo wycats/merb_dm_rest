@@ -39,26 +39,6 @@ module DataMapper
         end
         updated
       end
-      
-      # def update(attributes, query)
-      #   updated = 0
-      #   resources = read_many(query)
-      #   resources.each do |resource|
-      #     key = resource.class.key(self.name).map do |property|
-      #       resource.instance_variable_get(property.instance_variable_name)
-      #     end
-      #     result = http_put("/#{self.escaped_db_name}/#{key}", resource.to_json)
-      #     if result["ok"]
-      #       key = resource.class.key(self.name)
-      #       resource.instance_variable_set(
-      #         key.first.instance_variable_name, result["id"])
-      #       resource.instance_variable_set(
-      #         "@rev", result["rev"])
-      #       updated += 1
-      #     end
-      #   end
-      #   updated
-      # end
 
       def read_one(query)
         response = api_get(resource_name(query).to_s, api_query_parameters(query))
@@ -81,6 +61,17 @@ module DataMapper
           end               
         end
       end
+      
+      def delete(query)
+        deleted = 0
+        resources = read_many(query)
+        storage_name  = resource_name(query).to_s
+        resources.each do |resource|
+          result = api_delete(storage_name, api_query_parameters(query))
+          deleted +=1 if successful?(result)
+        end
+        deleted > 0
+      end      
       
       protected
       def api_get(path, options = {})
@@ -134,6 +125,8 @@ module DataMapper
         req = klass.new(path)
         req.basic_auth @uri.user, @uri.password
         req.set_form_data(data, seperator)
+        req.use_ssl = true if @uri.scheme == "https"
+        
         res = Net::HTTP.new(@uri.host, @uri.port).start{|http| http.request(req)}
         case res
         when Net::HTTPSuccess, Net::HTTPRedirection
@@ -162,7 +155,7 @@ module DataMapper
       def condition_parameters(conditions)
         out = {}
         conditions.each do |operator, prop, value|
-          out.merge!("#{prop.name}.#{operator}" => value)
+          out.merge!("#{prop.name}.#{operator}" => value.to_s)
         end
         out
       end
@@ -204,20 +197,20 @@ module DataMapper
           uri_or_options = Addressable::URI.parse(uri_or_options)
         end
         if Addressable::URI === uri_or_options
-          uri_or_options.scheme = "http"
+          uri_or_options.scheme = "http" if uri_or_options.scheme == "merb_rest"
           return uri_or_options.normalize
         end
-
-        user =      uri_or_options.fetch(:username)
-        password =  uri_or_options.fetch(:password)
-        host =      uri_or_options.fetch(:host, "")
-        port =      uri_or_options.fetch(:port)
-        database =  uri_or_options.fetch(:database)
-        scheme =    uri_or_options.fetch(:scheme, "http")
-        @format =   uri_or_options.fetch(:format, :json)
-        query =     uri_or_options.to_a.map { |pair| pair.join('=') }.join('&')
-        query = nil if query == ""
-
+        opts = uri_or_options.dup
+        opts.delete(:adapter)
+        user =      opts.delete(:username)
+        password =  opts.delete(:password)
+        host =      opts.delete(:host) || ""
+        database =  opts.delete(:database) || ""
+        scheme =    opts.delete(:scheme) || "http"
+        port =      opts.delete(:port) || scheme == "https" ? 443 : 80
+        @format =   opts.delete(:format) || :json
+        query =     opts.to_a.map { |pair| pair.join('=') }.join('&')
+        query = nil if query.blank?
         return Addressable::URI.new(
           scheme, user, password, host, port, database, query, nil
         )
