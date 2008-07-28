@@ -47,18 +47,21 @@ describe "DataMapper::Adatapers::MerbRest" do
   it "should handle ssl"
   it "should setup an connection"
   it "should setup a connection with basic auth"
+  it "should handle date/time"
+  it "should handle date"
   
   describe "create" do
     before(:each) do
       @response = mock("response")
       @adapter.stub!(:abstract_request).and_return(@response)
       @response.stub!(:body).and_return(@json)
+      @response.stub!(:code).and_return("200")
     end
     
     it{@adapter.should respond_to(:create)}
     
     it "should create a post" do
-      @adapter.should_receive(:api_post).with("posts", "post" => {"title" => "a title", "body" => "a body"})
+      @adapter.should_receive(:api_post).with("posts", "post" => {"title" => "a title", "body" => "a body"}).and_return(@response)
       Post.create(:title => "a title", :body => "a body")
     end
     
@@ -207,38 +210,54 @@ describe "DataMapper::Adatapers::MerbRest" do
       @response = mock("response")
       @adapter.stub!(:abstract_request).and_return(@response)
       @response.stub!(:body).and_return(@json)
+      @response.stub!(:code).and_return("200")
       @post = Post.new(:title => "my_title", :body => "my_body", :id => 16)
       @post.stub!(:new_record?).and_return(false)
+      @adapter.stub!(:read_many).and_return([@post])
     end
     
     it{@adapter.should respond_to(:update)}
     
-    it "should send a put requrest to a specific Post resource" do
+    it "should send a put request to a specific Post resource" do
       @adapter.should_receive(:api_put).and_return(@response)
-      @post.update_attributes(:title => "another title")      
+      @post.update_attributes(:title => "another title")
     end
-    it "should send the dirty fields to update"
-    it "should not send non-dirty fields"
-    it "should return the number of updated items"
-    it "should return 0 if an post does not update"
+    
+    it "should send the dirty fields to update" do
+      @adapter.should_receive(:api_put) do |location, attributes|
+        location.should == "posts"
+        attributes["title"].should == "yet another"
+        @response
+      end
+      @post.update_attributes(:title => "yet another")
+    end
+    
+    it "should return false if the update didn't happen" do
+      @response.should_receive(:code).and_return("500")
+      @post.update_attributes(:title => "something").should be_false
+    end
+    
+    it "should return true if the update did happen" do
+      @response.should_receive(:code).and_return("200")
+      @post.update_attributes(:body => "something different").should be_true
+    end
   end
   
   describe "delete" do
-    # it{@adapter.should respond_to(:delete)}
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+      @response.stub!(:code).and_return("200")
+      @post = Post.new(:title => "my_title", :body => "my_body", :id => 16)
+      @post.stub!(:new_record?).and_return(false)
+      @adapter.stub!(:read_many).and_return([@post])
+    end
+    
+    it{@adapter.should respond_to(:delete)}
     it "should send a delete request to a specific resource"
     it "should send a delete request to the general resource with parameters"
     it "should delete all records"
-  end
-  
-  describe "matchers" do
-    it "should get all records with an eql matcher"
-    it "should get all records with a like matcher"
-    it "shoudl get all records with a not matcher"
-    it "should get all records with a gt matcher"
-    it "should get all records with a gte matcher"
-    it "should get all records with a lt matcher"
-    it "shoudl get all records with a lte matcher"
-    it "should get records with multiple matchers"    
   end
 
   describe "formats" do
@@ -255,10 +274,6 @@ describe "DataMapper::Adatapers::MerbRest" do
     end
   end
 
-  it "should order records"
-  it "should handle date/time"
-  it "should handle date"
-  
   describe "api methods" do
     before do
       @response = mock("response",    :null_object => true)

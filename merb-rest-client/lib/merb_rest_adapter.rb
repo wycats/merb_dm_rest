@@ -19,16 +19,46 @@ module DataMapper
           storage_name  = model.storage_name(repository.name)
           
           result = api_post(storage_name, storage_name.singular => attributes_hash(attributes) )
-          created += 1
+          created += 1 if successful?(result)
         end
         created
       end
       
       def update(attributes, query)
-        
-        
-        
+        updated       = 0
+        model         = query.model
+        repository    = query.repository
+        storage_name  = resource_name(query).to_s
+        resources     = read_many(query)
+        resources.each do |resource|
+          params = attributes_hash(attributes)
+          params.merge!(attributes_hash( resource.class.key.zip(resource.key)))
+
+          result = api_put(storage_name, params)
+          updated += 1 if successful?(result)
+        end
+        updated
       end
+      
+      # def update(attributes, query)
+      #   updated = 0
+      #   resources = read_many(query)
+      #   resources.each do |resource|
+      #     key = resource.class.key(self.name).map do |property|
+      #       resource.instance_variable_get(property.instance_variable_name)
+      #     end
+      #     result = http_put("/#{self.escaped_db_name}/#{key}", resource.to_json)
+      #     if result["ok"]
+      #       key = resource.class.key(self.name)
+      #       resource.instance_variable_set(
+      #         key.first.instance_variable_name, result["id"])
+      #       resource.instance_variable_set(
+      #         "@rev", result["rev"])
+      #       updated += 1
+      #     end
+      #   end
+      #   updated
+      # end
 
       def read_one(query)
         response = api_get(resource_name(query).to_s, api_query_parameters(query))
@@ -191,6 +221,10 @@ module DataMapper
         return Addressable::URI.new(
           scheme, user, password, host, port, database, query, nil
         )
+      end
+      
+      def successful?(response)
+        (200..299).include?(response.code.to_i)
       end
       
       
