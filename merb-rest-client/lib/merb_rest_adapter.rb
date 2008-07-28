@@ -11,7 +11,18 @@ module DataMapper
       
       public
       def create(resources)
-        # created = 0
+        created = 0
+        resources.each do |resource|
+          repository    = resource.repository
+          model         = resource.model
+          attributes    = resource.dirty_attributes
+          storage_name  = model.storage_name(repository.name)
+          
+          result = api_post(storage_name, storage_name.singular => attributes_hash(attributes) )
+          created += 1
+        end
+        created
+      end
         # resources.each do |resource|
         #   repository = resource.repository
         #   model      = resource.model
@@ -35,7 +46,6 @@ module DataMapper
         #   end
         # end
         # created
-      end
 
       def read_one(query)
         response = api_get(resource_name(query).to_s, api_query_parameters(query))
@@ -46,7 +56,6 @@ module DataMapper
       end
 
       def read_many(query)
-        resource = resource_name(query)
         Collection.new(query) do |collection|
           result = api_get(resource_name(query).to_s, api_query_parameters(query))
           values_array =[]
@@ -151,6 +160,19 @@ module DataMapper
           out << "#{ord.property.name}.#{ord.direction}"
         end
         {"order" => out}
+      end
+      
+      def attributes_hash(hash)
+        out = {}
+        hash.each do |k,v|
+          case k
+          when Property
+            out[k.name.to_s] = v
+          else
+            out[k.to_s] = v
+          end
+        end
+        out
       end
     
       def parse_results(data)

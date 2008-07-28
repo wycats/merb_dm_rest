@@ -40,10 +40,6 @@ describe "DataMapper::Adatapers::MerbRest" do
     DataMapper.setup(:merb_rest, "merb_rest://example.com")
     @repository = repository(:merb_rest)
     @adapter = @repository.adapter
-    
-    1.upto(10) do |n|
-      Post.create(:title => "title #{n}", :body => "body #{n}")
-    end
   end
   
 
@@ -53,15 +49,25 @@ describe "DataMapper::Adatapers::MerbRest" do
   it "should setup a connection with basic auth"
   
   describe "create" do
-    it{@adapter.should respond_to(:create)}
-    it "should send a post to the Post resource with parameters" do
-      pending
-      params = {:post => {:title => "created post", :body => "created_body"}}
-      RestClient.should_receive(:post).with("http://example.com/posts", params.to_params)
-      Post.create(params[:post])
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
     end
     
-    it "should return the number of created items"   
+    it{@adapter.should respond_to(:create)}
+    
+    it "should create a post" do
+      @adapter.should_receive(:api_post).with("posts", "post" => {"title" => "a title", "body" => "a body"})
+      Post.create(:title => "a title", :body => "a body")
+    end
+    
+    it "should return the created item" do
+      post = Post.create(:title => "a title", :body => "a body")
+      post.should be_a_kind_of(Post)
+      post.title.should == "a title"
+    end
+    
     it "should return 0 if a post does not save" 
   end
   
