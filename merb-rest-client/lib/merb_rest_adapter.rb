@@ -38,21 +38,17 @@ module DataMapper
       end
 
       def read_one(query)
-        query.limit = 1
-        read_many(query).first
+        response = api_get(resource_name(query).to_s, api_query_parameters(query))
+        fields = query.fields.map{|f| f.name.to_s}
+        result = parse_results(response.body).first
+        value_array = fields.map{|f| result[f]}
+        query.model.load(value_array, query)      
       end
 
       def read_many(query)
         resource = resource_name(query)
         Collection.new(query) do |collection|
-          parameters = condition_parameters(query.conditions)
-          parameters.merge!(order_parameters(query.order)) unless query.order.blank?
-          parameters.merge!("fields"  => query.fields.map{|f| f.name.to_s}) unless query.fields.blank?
-          parameters.merge!("limit"   => query.limit) if query.limit
-          parameters.merge!("offset"  => query.offset) if query.offset && query.offset > 1
-          parameters.merge!("unique"  => query.unique?) if query.unique?
-
-          result = api_get(resource_name(query).to_s, parameters)
+          result = api_get(resource_name(query).to_s, api_query_parameters(query))
           values_array =[]
           fields = query.fields.map{|f| f.name.to_s}
           results_array = parse_results(result.body).map do |result|
@@ -123,7 +119,17 @@ module DataMapper
         else
           res.error!
         end
-      end      
+      end
+      
+      def api_query_parameters(query)
+        parameters = condition_parameters(query.conditions)
+        parameters.merge!(order_parameters(query.order)) unless query.order.blank?
+        parameters.merge!("fields"  => query.fields.map{|f| f.name.to_s}) unless query.fields.blank?
+        parameters.merge!("limit"   => query.limit) if query.limit
+        parameters.merge!("offset"  => query.offset) if query.offset && query.offset > 1
+        parameters.merge!("unique"  => query.unique?) if query.unique?
+        parameters
+      end
       
       def field_parameters(fields)
         out = []
