@@ -37,22 +37,30 @@ module DataMapper
         # created
       end
 
-      # def read_one(query)
-      # end
+      def read_one(query)
+        query.limit = 1
+        read_many(query).first
+      end
 
       def read_many(query)
         resource = resource_name(query)
         Collection.new(query) do |collection|
           parameters = condition_parameters(query.conditions)
-          parameters.merge!(order_parameters(query.order))
-          parameters.merge!(field_parameters(query.fields))
+          parameters.merge!(order_parameters(query.order)) unless query.order.blank?
+          parameters.merge!("fields"  => query.fields.map{|f| f.name.to_s}) unless query.fields.blank?
           parameters.merge!("limit"   => query.limit) if query.limit
           parameters.merge!("offset"  => query.offset) if query.offset && query.offset > 1
+          parameters.merge!("unique"  => query.unique?) if query.unique?
 
           result = api_get(resource_name(query).to_s, parameters)
-          hash = parse_results(result.body)     
-          
-          collection.load(hash)
+          values_array =[]
+          fields = query.fields.map{|f| f.name.to_s}
+          results_array = parse_results(result.body).map do |result|
+            fields.map{|f| result[f]}
+          end
+          results_array.each do |result|
+            collection.load(result)
+          end               
         end
       end
       

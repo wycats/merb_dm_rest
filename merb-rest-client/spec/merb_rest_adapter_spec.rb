@@ -69,7 +69,7 @@ describe "DataMapper::Adatapers::MerbRest" do
   
   describe "read_many" do
     before(:all) do
-      @hash = [{"title" => "title", "body" => "body", "id" => 3}]
+      @hash = [{"title" => "title", "body" => "body", "id" => 3},{"title" => "another title", "body" => "another body", "id" => 42}]
       @json = JSON.generate(@hash)
 
     end
@@ -83,12 +83,12 @@ describe "DataMapper::Adatapers::MerbRest" do
     it{@adapter.should respond_to(:read_many)}
     
     it "should send a get request to the Post resource" do
-      @adapter.should_receive(:api_get).with("posts", {"order" => ["id.asc"], "fields" => [:id, :title, :body]}).and_return(@response)
+      @adapter.should_receive(:api_get).with("posts", {"order" => ["id.asc"], "fields" => ["id", "title", "body"]}).and_return(@response)
       Post.all.inspect
     end
     
     it "should return instantiated objects" do
-      @adapter.should_receive(:api_get).with("posts", {"order" => ["id.asc"], "fields" => [:id, :title, :body]}).and_return(@response)
+      @adapter.should_receive(:api_get).with("posts", {"order" => ["id.asc"], "fields" => ["id", "title", "body"]}).and_return(@response)
       @adapter.should_receive(:parse_results).and_return(@hash)
       Post.all.inspect
     end
@@ -97,13 +97,31 @@ describe "DataMapper::Adatapers::MerbRest" do
       Post.all.each{|p| p.should be_a_kind_of(Post)}
     end
     
+    it "should load the objects correctly" do
+      post = Post.all.map{|p| p}.first
+      post.title.should == "title"
+      post.body.should == "body"
+      post.id.should == 3
+    end
+    
+    it "Should load all the objects correctly" do
+      posts = Post.all(:order => [:id.asc]).map{|p| p}
+      posts.should have(2).items
+      posts[0].id.should == 3
+      posts[0].title.should == "title"
+      posts[0].body.should == "body"
+      posts[1].id.should == 42
+      posts[1].title.should == "another title"
+      posts[1].body.should == "another body"
+    end
+    
     describe "read many with conditions" do
       
       it "should use a get with conditional parameters" do
         @adapter.should_receive(:api_get).with("posts", { "title.like" => "tit%", 
                                                           "body.eql" => "body",
                                                           "order" => ["id.asc"], 
-                                                          "fields" => [:id, :title, :body]
+                                                          "fields" => ["id", "title", "body"]
                                                           }).and_return(@response)
         Post.all(:title.like => "tit%", :body.eql => "body").each{}
       end
@@ -111,23 +129,30 @@ describe "DataMapper::Adatapers::MerbRest" do
       it "should add a fields option for fields" do
         @adapter.should_receive(:api_get).with("posts", "title.like"  => "tit%", 
                                                         "order"       => ["id.asc"], 
-                                                        "fields"      => [:id, :body]).and_return(@response)
+                                                        "fields"      => ["id", "body"]).and_return(@response)
         Post.all(:title.like => "tit%", :fields => [:id, :body]).each{}
       end
       
       it "should add the options for limit" do
         @adapter.should_receive(:api_get).with("posts",   "title.like"  => "tit%",
                                                           "order"       => ["id.asc"],
-                                                          "fields"      => [:id, :title, :body],
+                                                          "fields"      => ["id", "title", "body"],
                                                           "limit"       => 5).and_return(@response)
         Post.all(:title.like => "tit%", :limit => 5).each{}
       end
       
       it "should allow for options with offset" do
         @adapter.should_receive(:api_get).with("posts",  "order"   => ["id.asc"],
-                                                          "fields"  => [:id, :title, :body],
+                                                          "fields"  => ["id", "title", "body"],
                                                           "offset"  => 23).and_return(@response)
         Post.all(:offset => 23).each{}
+      end
+      
+      it "should allow for unique flag" do
+        @adapter.should_receive(:api_get).with("posts",  "order"   => ["id.asc"],
+                                                          "fields"  => ["id", "title", "body"],
+                                                          "unique"  => true).and_return(@response)
+        Post.all(:unique => true).each{}
       end
     end
     
