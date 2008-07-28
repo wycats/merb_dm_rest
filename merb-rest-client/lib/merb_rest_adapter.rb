@@ -23,29 +23,12 @@ module DataMapper
         end
         created
       end
-        # resources.each do |resource|
-        #   repository = resource.repository
-        #   model      = resource.model
-        #   attributes = resource.dirty_attributes
-        # 
-        #   # TODO: make a model.identity_field method
-        #   identity_field = model.key(repository.name).detect { |p| p.serial? }
-        # 
-        #   paramteters = {resource_name(model) => model.value_paramters }
-        #   # statement = create_statement(repository, model, attributes.keys, identity_field)
-        #   # bind_values = attributes.values
-        # 
-        #   # result = execute(statement, *bind_values)
-        #   result = post(query, URI.escape(parameters.to_params))
-        # 
-        #   if result.to_i == 1
-        #     if identity_field
-        #       identity_field.set!(resource, result.insert_id)
-        #     end
-        #     created += 1
-        #   end
-        # end
-        # created
+      
+      def update(attributes, query)
+        
+        
+        
+      end
 
       def read_one(query)
         response = api_get(resource_name(query).to_s, api_query_parameters(query))

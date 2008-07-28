@@ -67,8 +67,6 @@ describe "DataMapper::Adatapers::MerbRest" do
       post.should be_a_kind_of(Post)
       post.title.should == "a title"
     end
-    
-    it "should return 0 if a post does not save" 
   end
   
   describe "read_many" do  
@@ -205,8 +203,20 @@ describe "DataMapper::Adatapers::MerbRest" do
   end
   
   describe "update" do
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+      @post = Post.new(:title => "my_title", :body => "my_body", :id => 16)
+      @post.stub!(:new_record?).and_return(false)
+    end
+    
     it{@adapter.should respond_to(:update)}
-    it "should send a put requrest to a specific Post resource"
+    
+    it "should send a put requrest to a specific Post resource" do
+      @adapter.should_receive(:api_put).and_return(@response)
+      @post.update_attributes(:title => "another title")      
+    end
     it "should send the dirty fields to update"
     it "should not send non-dirty fields"
     it "should return the number of updated items"
