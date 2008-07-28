@@ -46,9 +46,7 @@ describe "DataMapper::Adatapers::MerbRest" do
     end
   end
   
-  before(:each) do
 
-  end
     
   it "should handle ssl"
   it "should setup an connection"
@@ -67,13 +65,12 @@ describe "DataMapper::Adatapers::MerbRest" do
     it "should return 0 if a post does not save" 
   end
   
-  describe "read_many" do
+  describe "read_many" do  
     before(:all) do
       @hash = [{"title" => "title", "body" => "body", "id" => 3},{"title" => "another title", "body" => "another body", "id" => 42}]
       @json = JSON.generate(@hash)
-
     end
-    
+      
     before(:each) do
       @response = mock("response")
       @adapter.stub!(:abstract_request).and_return(@response)
@@ -156,16 +153,49 @@ describe "DataMapper::Adatapers::MerbRest" do
       end
     end
     
-    describe "load many with associations" do
-      
-    end
-    
   end
   
   describe "read_one" do
+    
+    before(:all) do
+      @hash = [{"title" => "title", "body" => "body", "id" => 3},{"title" => "another title", "body" => "another body", "id" => 42}]
+      @json = JSON.generate(@hash)
+    end
+    
+    before(:each) do
+      @response = mock("response")
+      @adapter.stub!(:abstract_request).and_return(@response)
+      @response.stub!(:body).and_return(@json)
+    end
+    
     it{@adapter.should respond_to(:read_one)}
-    it "should send a get request to a specific Post Resource"
-    it "should get the post"
+    
+    it "should send a get request to a specific Post Resource" do
+      @adapter.should_receive(:api_get).with("posts",   "id.eql"  => 3,
+                                                        "fields"  => ["id", "title", "body"],
+                                                        "order"   => ["id.asc"],
+                                                        "limit"   => 1
+                                                        ).and_return(@response)
+      
+      Post.get(3).should_not be_nil
+    end
+    
+    it "should send a get the first post" do
+      post = Post.first
+      post.should_not be_nil
+      post.id.should == 3
+      post.title.should == "title"
+      post.body.should == "body"
+    end
+    
+    it "should get the provided post" do
+      @response.stub!(:body).and_return(JSON.generate([{"title" => "another title", "body" => "another body", "id" => 42}]))
+      post = Post.get(42)
+      post.should_not be_nil
+      post.id.should == 42
+      post.title.should == "another title"
+      post.body.should == "another body"
+    end
   end
   
   describe "update" do
