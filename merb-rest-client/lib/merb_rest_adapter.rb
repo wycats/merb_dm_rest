@@ -46,6 +46,8 @@ module DataMapper
           parameters = condition_parameters(query.conditions)
           parameters.merge!(order_parameters(query.order))
           parameters.merge!(field_parameters(query.fields))
+          parameters.merge!("limit"   => query.limit) if query.limit
+          parameters.merge!("offset"  => query.offset) if query.offset && query.offset > 1
 
           result = api_get(resource_name(query).to_s, parameters)
           hash = parse_results(result.body)     
@@ -136,7 +138,7 @@ module DataMapper
         end
         {"order" => out}
       end
-      
+    
       def parse_results(data)
         case @format
         when :json

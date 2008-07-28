@@ -105,17 +105,34 @@ describe "DataMapper::Adatapers::MerbRest" do
                                                           "order" => ["id.asc"], 
                                                           "fields" => [:id, :title, :body]
                                                           }).and_return(@response)
-        Post.all(:title.like => "tit%", :body.eql => "body").inspect
+        Post.all(:title.like => "tit%", :body.eql => "body").each{}
       end
       
       it "should add a fields option for fields" do
-        pending "There is an issue with specifying the :fields conditions with dm :|"
         @adapter.should_receive(:api_get).with("posts", "title.like"  => "tit%", 
-                                                        "fields"      => [:body, :id],
                                                         "order"       => ["id.asc"], 
                                                         "fields"      => [:id, :body]).and_return(@response)
-        Post.all(:title.like => "tit%", :fields => [:id, :body]).inspect
+        Post.all(:title.like => "tit%", :fields => [:id, :body]).each{}
       end
+      
+      it "should add the options for limit" do
+        @adapter.should_receive(:api_get).with("posts",   "title.like"  => "tit%",
+                                                          "order"       => ["id.asc"],
+                                                          "fields"      => [:id, :title, :body],
+                                                          "limit"       => 5).and_return(@response)
+        Post.all(:title.like => "tit%", :limit => 5).each{}
+      end
+      
+      it "should allow for options with offset" do
+        @adapter.should_receive(:api_get).with("posts",  "order"   => ["id.asc"],
+                                                          "fields"  => [:id, :title, :body],
+                                                          "offset"  => 23).and_return(@response)
+        Post.all(:offset => 23).each{}
+      end
+    end
+    
+    describe "load many with associations" do
+      
     end
     
   end
