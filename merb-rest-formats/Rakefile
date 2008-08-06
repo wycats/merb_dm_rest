@@ -1,0 +1,67 @@
+require 'rubygems'
+require 'rake/gempackagetask'
+require 'rubygems/specification'
+require 'spec'
+require 'spec/rake/spectask'
+require 'date'
+
+NAME = "merb_dm_rest_formats"
+GEM_VERSION = "0.0.1"
+AUTHOR = "Your Name"
+EMAIL = "Your Email"
+HOMEPAGE = "http://merbivore.com/"
+SUMMARY = "Merb plugin that provides ..."
+
+spec = Gem::Specification.new do |s|
+  s.rubyforge_project = ''
+  s.name = NAME
+  s.version = GEM_VERSION
+  s.platform = Gem::Platform::RUBY
+  s.has_rdoc = true
+  s.extra_rdoc_files = ["README", "LICENSE", 'TODO']
+  s.summary = SUMMARY
+  s.description = s.summary
+  s.author = AUTHOR
+  s.email = EMAIL
+  s.homepage = HOMEPAGE
+  s.require_path = 'lib'
+  s.files = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,spec}/**/*")
+  
+end
+
+Rake::GemPackageTask.new(spec) do |pkg|
+  pkg.gem_spec = spec
+end
+
+desc "install the plugin locally"
+task :install => [:package] do
+  sh %{#{sudo} gem install #{install_home} pkg/#{NAME}-#{GEM_VERSION} --no-update-sources}
+end
+
+desc "create a gemspec file"
+task :make_spec do
+  File.open("#{NAME}.gemspec", "w") do |file|
+    file.puts spec.to_ruby
+  end
+end
+
+
+desc "Run specs, run a specific spec with TASK=spec/path_to_spec.rb"
+task :spec => [ "spec:default" ]
+namespace :spec do
+  OPTS_FILENAME = "./spec/spec.opts"
+  if File.exist?(OPTS_FILENAME)
+    SPEC_OPTS = ["--options", OPTS_FILENAME]
+  else
+    SPEC_OPTS = ["--color", "--format", "specdoc"]
+  end
+  
+  Spec::Rake::SpecTask.new('default') do |t|
+      t.spec_opts = SPEC_OPTS
+    if(ENV['TASK'])
+      t.spec_files = [ENV['TASK']]
+    else
+      t.spec_files = Dir['spec/**/*_spec.rb'].sort
+    end
+  end
+end
