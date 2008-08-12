@@ -43,7 +43,7 @@ module DataMapper
       def read_one(query)
         response = api_get(resource_name(query).to_s, api_query_parameters(query))
         fields = query.fields.map{|f| f.name.to_s}
-        result = parse_results(response.body).first
+        result = parse_results(response.body)[resource_name(query).to_s].first
         value_array = fields.map{|f| result[f]}
         query.model.load(value_array, query)      
       end
@@ -53,7 +53,7 @@ module DataMapper
           result = api_get(resource_name(query).to_s, api_query_parameters(query))
           values_array =[]
           fields = query.fields.map{|f| f.name.to_s}
-          results_array = parse_results(result.body).map do |result|
+          results_array = parse_results(result.body)[resource_name(query)].map do |result|
             fields.map{|f| result[f]}
           end
           results_array.each do |result|
@@ -185,6 +185,8 @@ module DataMapper
         case @format
         when :json
           data.blank? ? {} : JSON.parse(data)
+        when :xml
+          data.blank? ? {} : Merb::Rest::Formats::Xml.decode(data)
         end
       end
       
