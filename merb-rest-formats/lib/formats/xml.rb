@@ -19,10 +19,16 @@ module Merb
               include REXML
 
               def encode(args)
-                raise ArgumentError, "Must provide a hash to encode to XML" unless args.kind_of?(Hash) or args.kind_of?(Struct)
-                el = Element.new('args')
-                args.each do |k,v|
-                  el << encode_pair(k,v)
+                el = encode_pair(nil, args)
+                case args
+                when Array
+                  args.each do |v|
+                    el << encode_pair(nil, v)
+                  end
+                when Hash, Struct
+                  args.each do |k,v|
+                    el << encode_pair(k,v)
+                  end
                 end
                 el.root.to_s
               end

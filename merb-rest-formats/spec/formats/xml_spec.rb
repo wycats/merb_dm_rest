@@ -179,141 +179,131 @@ describe "Merb::DmRest::Fomats::Xml format marshalling" do
     it{Formats::Xml.should respond_to(:decode)}
   
     it "should decode a string" do
-      string = "<args><string>Fred</string></args>"
-      Formats::Xml.decode(string).should == {:args => "Fred"}
+      string = "<string>Fred</string>"
+      Formats::Xml.decode(string).should == "Fred"
     end
     
     it "should decode a string with a name" do
-      string = "<args><string name='name'>Fred</string></args>"
-      Formats::Xml.decode(string).should == {:args => {:name => "Fred"}}
+      string = "<struct><string name='name'>Fred</string></struct>"
+      Formats::Xml.decode(string).should == {:name => "Fred"}
     end
     
     it "should decode an integer" do
-      string = "<args><i4>42</i4></args>"
-      Formats::Xml.decode(string).should == {:args => 42}
+      string = "<i4>42</i4>"
+      Formats::Xml.decode(string).should == 42
     end
     
     it "should decode an integer with a name" do
-      string = "<args><i4 name='answer'>42</i4></args>"
-      Formats::Xml.decode(string).should == {:args => {:answer => 42}}
+      string = "<struct><i4 name='answer'>42</i4></struct>"
+      Formats::Xml.decode(string).should == {:answer => 42}
     end
     
     it "should decode a float" do
-      string = "<args><double>4.2</double></args>"
-      Formats::Xml.decode(string).should == {:args => 4.2}
+      string = "<double>4.2</double>"
+      Formats::Xml.decode(string).should == 4.2
     end
     
     it "should decode a float with a name" do
-      string = "<args><double name='wrong_answer'>4.2</double></args>"
-      Formats::Xml.decode(string).should == {:args => {:wrong_answer => 4.2}}
+      string = "<struct><double name='wrong_answer'>4.2</double></struct>"
+      Formats::Xml.decode(string).should == {:wrong_answer => 4.2}
     end
     
     it "should decode a DateTime" do
       date_time = DateTime.now
       ds = date_time.strftime("%Y%m%dT%H:%M:%S%Z")
-      string = "<args><dateTime.iso8601>#{ds}</dateTime.iso8601></args>"
+      string = "<dateTime.iso8601>#{ds}</dateTime.iso8601>"
       result = Formats::Xml.decode(string)
-      result[:args].to_s.should == date_time.to_s
+      result.to_s.should == date_time.to_s
     end
     
     it "should decode a DateTime with a name" do
       date_time = DateTime.now
       ds = date_time.strftime("%Y%m%dT%H:%M:%S%Z")
-      string = "<args><dateTime.iso8601 name='dob'>#{ds}</dateTime.iso8601></args>"
+      string = "<struct><dateTime.iso8601 name='dob'>#{ds}</dateTime.iso8601></struct>"
       result = Formats::Xml.decode(string)
-      result[:args][:dob].to_s.should == date_time.to_s
+      result[:dob].to_s.should == date_time.to_s
     end
     
     it "should decode an Array of Strings" do
-      string = "<args><list><string>a</string><string>b</string><string>c</string></list></args>"
+      string = "<list><string>a</string><string>b</string><string>c</string></list>"
       result = Formats::Xml.decode(string)
-      result[:args].should == %w(a b c)
+      result.should == %w(a b c)
     end
     
     it "should decode an Array of integers" do
       string =<<-XML
-        <args>
-          <list>
-            <i4>1</i4>
-            <i4>2</i4>
-            <i4>3</i4>
-          </list>
-        </args>
+        <list>
+          <i4>1</i4>
+          <i4>2</i4>
+          <i4>3</i4>
+        </list>
       XML
       result = Formats::Xml.decode(string)
-      result[:args].should == [1,2,3]
+      result.should == [1,2,3]
     end
     
     it "should decode a mixed array" do
       string =<<-XML
-        <args>
-          <list>
-            <i4>1</i4>
-            <string>Fred</string>
-            <boolean>1</boolean>
-            <nil/>
-          </list>
-        </args>
+        <list>
+          <i4>1</i4>
+          <string>Fred</string>
+          <boolean>1</boolean>
+          <nil/>
+        </list>
       XML
       result = Formats::Xml.decode(string)
-      result[:args].should == [1,"Fred",true,nil]
+      result.should == [1,"Fred",true,nil]
     end
     
     it "should decode a named list" do
       string =<<-XML
-        <args>
+        <struct>
           <list name='my_list'>
             <i4>1</i4>
             <i4>2</i4>
           </list>
-        </args>
+        </struct>
       XML
       result = Formats::Xml.decode(string)
-      result[:args][:my_list].should == [1,2]
+      result[:my_list].should == [1,2]
     end
     
     it "should decode a nested array" do
       string =<<-XML
-        <args>
+        <list>
+          <i4>1</i4>
           <list>
-            <i4>1</i4>
-            <list>
-              <string>nested</string>
-            </list>
+            <string>nested</string>
           </list>
-        </args>
+        </list>
       XML
       result = Formats::Xml.decode(string)
-      result[:args].should == [1,["nested"]]
+      result.should == [1,["nested"]]
     end
     
     it "should decode a struct to a hash" do
       string =<<-XML
-        <args>
-          <struct>
-            <string name='name'>Fred</string>
-            <list name='my_list'>
-              <i4>1</i4>
-              <string>five</string>
-            </list>
-          </struct>
-        </args>
+        <struct>
+          <string name='name'>Fred</string>
+          <list name='my_list'>
+            <i4>1</i4>
+            <string>five</string>
+          </list>
+        </struct>
       XML
       result = Formats::Xml.decode(string)
-      result[:args].should == {:name => "Fred", :my_list => [1,"five"]}
+      result.should == {:name => "Fred", :my_list => [1,"five"]}
     end   
     
     it "should raise an error for any children of a struct that do not have a name" do
       string =<<-XML
-        <args>
-          <struct>
-            <string name='name'>Fred</string>
-            <list>
-              <i4>1</i4>
-              <string>five</string>
-            </list>
-          </struct>
-        </args>
+        <struct>
+          <string name='name'>Fred</string>
+          <list>
+            <i4>1</i4>
+            <string>five</string>
+          </list>
+        </struct>
       XML
       lambda do
         result = Formats::Xml.decode(string)
@@ -322,34 +312,32 @@ describe "Merb::DmRest::Fomats::Xml format marshalling" do
     
     it "should deal with a collection of structs" do
       string =<<-XML
-        <args>
-          <list>
-            <struct>
-              <string name="name">Fred</string>
-              <i4 name="age">23</i4>
-            </struct>
-            <struct>
-              <string name="name">Graeme</string>
-              <i4 name="age">45</i4>
-            </struct>
-            <struct>
-              <string name="name">Wilma</string>
-              <i4 name="age">21</i4>
-            </struct>
-          </list>
-        </args>      
+        <list>
+          <struct>
+            <string name="name">Fred</string>
+            <i4 name="age">23</i4>
+          </struct>
+          <struct>
+            <string name="name">Graeme</string>
+            <i4 name="age">45</i4>
+          </struct>
+          <struct>
+            <string name="name">Wilma</string>
+            <i4 name="age">21</i4>
+          </struct>
+        </list>
       XML
       result = Formats::Xml.decode(string)
-      result.should == {:args => [
+      result.should == [
           {:name => "Fred",   :age => 23},
           {:name => "Graeme", :age => 45},
           {:name => "Wilma",  :age => 21}
-        ]}
+        ]
     end
     
     it "should deal with a collection of structs in a named list" do
       string =<<-XML
-        <args>
+        <struct>
           <list name="users">
             <struct>
               <string name="name">Fred</string>
@@ -364,14 +352,14 @@ describe "Merb::DmRest::Fomats::Xml format marshalling" do
               <i4 name="age">21</i4>
             </struct>
           </list>
-        </args>      
+        </struct>      
       XML
       result = Formats::Xml.decode(string)
-      result.should == {:args => {:users => [
+      result.should == {:users => [
           {:name => "Fred",   :age => 23},
           {:name => "Graeme", :age => 45},
           {:name => "Wilma",  :age => 21}
-        ]}}
+        ]}
     end
     
   end
@@ -379,7 +367,7 @@ describe "Merb::DmRest::Fomats::Xml format marshalling" do
   describe "integration" do
     
     def reversible?(params)
-      Formats::Xml.decode(Formats::Xml.encode(params))[:args].should == params
+      Formats::Xml.decode(Formats::Xml.encode(params)).should == params
     end
     
     it "should be reversible " do
