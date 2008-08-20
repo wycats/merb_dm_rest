@@ -145,17 +145,24 @@ describe "MerbRestServer::RestResource" do
 
   describe "fields" do
     it "should select all the fields by default" do
-      @rr.fields.sort_by{|i| i.to_s}.should == [:age, :dob, :id, :name]
+      @rr.fields.should == [{:id => Integer}, {:name => String}, {:age => Integer}, {:dob => DateTime}]
     end
     
     it "should select all fields in the repository by default" do
       rr = MerbRestServer::RestResource.new(Person, :repository => repository(:tester))
-      rr.fields.sort_by{|i| i.to_s}.should == [:age, :dob, :id, :name, :nick]
+      expected = [ {:id    => Integer}, 
+                  {:name  => String}, 
+                  {:age   => Integer}, 
+                  {:dob   => DateTime}, 
+                  {:nick  => String}]
+      results = rr.fields
+      expected.each{|e| results.should include(e); results.delete(e)}
+      results.should be_empty
     end
     
     it "should allow the fields to be set manually" do
       @rr.expose_fields(:id, :name, :age)
-      @rr.fields.should == [:id, :name, :age]
+      @rr.fields.should == [{:id => Integer}, {:name => String}, {:age => Integer}]
     end
     
     it "should raise an error if a field does not exist on the model" do

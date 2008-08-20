@@ -15,13 +15,17 @@ module MerbRestServer
       @resource_name  = klass.storage_names[@repository.name]
       @rest_methods   = opts.fetch(:methods, REST_METHODS.dup)
       
-      @fields = field_names_from_class(@resource_class, @repository)
+      @fields = fields_from_class(@resource_class, @repository)
     end
     
     def expose_fields(*field_names)
       bad = field_names.flatten - field_names_from_class(resource_class, repository)
       raise ArgumentError, "#{bad.join} fields do not exist for the #{resource_class.name} model in the #{repository.name} repository." unless bad.blank?
-      @fields = field_names.flatten
+      @fields = fields_from_class(resource_class, repository, field_names)
+    end
+    
+    def field_names
+      @fields.map{|p| p.keys.first}
     end
     
     def repository=(repo)
@@ -45,11 +49,6 @@ module MerbRestServer
       set_rest_methods (@rest_methods.dup - methods.flatten)
     end
     
-    def set_finder
-      raise ArgumentError, "You need to specify a block" unless block_given?
-      
-    end
-    
     def to_xml
     end
     
@@ -62,8 +61,15 @@ module MerbRestServer
       @rest_methods = tmp
     end
     
-    def field_names_from_class(klass, repository)
-      klass.properties(repository.name).map{|p| p.name} 
+    def field_names_from_class(klass,repository)
+      fields_from_class(resource_class, repository).map{|k| k.keys.first}
+    end
+    
+    def fields_from_class(klass, repository, *fields)
+      fields = fields.flatten
+      klass.properties(repository.name).map do |p| 
+        {p.name => p.primitive} if fields.blank? || fields.include?(p.name)
+      end.compact
     end
     
   end # RestResource
