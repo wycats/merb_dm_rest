@@ -2,6 +2,7 @@ require 'rubygems'
 require 'merb-core'
 require 'merb-slices'
 require 'spec'
+require 'dm-sweatshop'
 
 # Add merb_rest_server.rb to the search path
 Merb::Plugins.config[:merb_slices][:auto_register] = true
@@ -44,3 +45,5 @@ Spec::Runner.configure do |config|
   config.include(Merb::Test::ControllerHelper)
   config.include(Merb::Test::SliceHelper)
 end
+
+require File.join(File.dirname(__FILE__), 'spec_fixtures')

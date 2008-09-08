@@ -1,25 +1,24 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 describe "MerbRestServer::RestResource" do
-  class Person 
-    include DataMapper::Resource
-    property :id, Serial
-    property :name, String
-    property :age, Integer
-    property :dob, DateTime   
-    
-    repository(:tester) do
-      property :nick, String
-    end
-  end
   
   before(:all) do
     @rest_methods = ["OPTIONS", "GET", "PUT", "POST", "DELETE"].sort
     DataMapper.setup(:tester, "sqlite3::memory:")
+    
+    class PersonRestResource < MerbRestServer::RestResource
+      resource_class Person
+    end
+    
   end
   
   before(:each) do
-    @rr = MerbRestServer::RestResource.new(Person)
+    @rr = PersonRestResource
+  end
+  
+  after(:each) do
+    PersonRestResource.reset_rest_methods!
+    PersonRestResource.repository repository(:default)
   end
   
   describe "interface" do
@@ -44,8 +43,12 @@ describe "MerbRestServer::RestResource" do
       @rr.rest_methods.sort.should == @rest_methods
     end
     it "should allow a user to specify the rest methods on initialization" do
-      rr = MerbRestServer::RestResource.new(Person, :methods => ["POST", "GET"])
-      rr.rest_methods.should == ["POST", "GET"]
+      class APersonResource < MerbRestServer::RestResource
+        resource_class Person
+        rest_methods  %w(POST GET)
+      end
+      
+      APersonResource.rest_methods.should == ["POST", "GET"]
     end
     
     it "should allow the rest_methods to be cleared" do
@@ -130,7 +133,7 @@ describe "MerbRestServer::RestResource" do
     
     it "should raise an error if the repository isn't a DataMapper::Repository" do
       lambda do
-        @rr.repository = :tester
+        @rr.repository :tester
       end.should raise_error(ArgumentError)
     end
     
@@ -149,13 +152,17 @@ describe "MerbRestServer::RestResource" do
     end
     
     it "should select all fields in the repository by default" do
-      rr = MerbRestServer::RestResource.new(Person, :repository => repository(:tester))
+      class PersonTesterResource < MerbRestServer::RestResource
+        repository DataMapper.repository(:tester)
+        resource_class Person
+      end
+      
       expected = [ {:id    => Integer}, 
-                  {:name  => String}, 
-                  {:age   => Integer}, 
-                  {:dob   => DateTime}, 
-                  {:nick  => String}]
-      results = rr.fields
+                   {:name  => String}, 
+                   {:age   => Integer}, 
+                   {:dob   => DateTime}, 
+                   {:nick  => String}]
+      results = PersonTesterResource.fields
       expected.each{|e| results.should include(e); results.delete(e)}
       results.should be_empty
     end
@@ -173,4 +180,29 @@ describe "MerbRestServer::RestResource" do
     
   end
 
+  it "should output the options for the resource" do
+    PersonRestResource.options.should == {
+                                              :methods        =>  ["DELETE", "GET", "OPTIONS", "POST", "PUT"], 
+                                              :resource_name  =>  "people", 
+                                              :path           =>  "/people", 
+                                              :fields         =>  [{:id=>Integer}, {:name=>String}, {:age=>Integer}, {:dob=>DateTime}]
+                                            }
+  end
+  
+  it "should take into account the other methods and fields" do
+    class APersonResource < MerbRestServer::RestResource
+      resource_class Person
+      resource_name "another_person"
+      rest_methods  %w(POST GET)
+      expose_fields :id, :name, :age
+    end
+    
+    APersonResource.options.should == {
+                                        :methods        =>  ["POST", "GET"], 
+                                        :resource_name  =>  "another_person", 
+                                        :path           =>  "/another_person", 
+                                        :fields         =>  [{:id=>Integer}, {:name=>String}, {:age=>Integer}]
+                                      }
+    
+  end
 end
