@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/../spec_helper'
 describe MerbRestServer::QueryParser do
   
   before(:all) do
-    QP = MerbRestServer::QueryParser
+    QP = MerbRestServer::QueryParser unless defined?(QP)
     class CatRestResource < MerbRestServer::RestResource
       resource_class Cat
       resource_name  "cats"
@@ -62,7 +62,57 @@ describe MerbRestServer::QueryParser do
     query.offset.should == 2
   end
   
-  it "should typecast values from strings for the parameters"  
+  describe "typecasting" do
+    
+    it "should typecast a string" do
+      q = QP.parse("people", "q" => {"name" => "fred"})
+      q.conditions.should include([:eql, Person.properties[:name], "fred"])
+    end
+    
+    it "should typecase an integer" do
+      q = QP.parse("people", "q" => {"id" => "42"})
+      q.conditions.should include([:eql, Person.properties[:id], 42])
+    end
+    
+    it "should typecast a float" do
+      q = QP.parse("cats", "q" => {"mass" => "1.23"})
+      q.conditions.should include([:eql, Cat.properties[:mass], 1.23])
+    end
+    
+    it "should typecast a boolean" do
+      q = QP.parse("cats", "q" => {"alive" => "0"})
+      q.conditions.should include([:eql, Cat.properties[:alive], false])
+    end
+    
+    it "should typecast a DateTime" do
+      date_time = DateTime.now
+      df        = date_time.strftime("%Y%m%dT%H:%M:%S%Z")
+      
+      q = QP.parse("people", "q" => {"dob" => df})
+      cond = q.conditions.first
+      cond[2].to_s.should == date_time.to_s
+    end
+    
+    it "should typecast a Date" do
+      date = Date.today
+      df   = date.strftime("%Y%m%dT%H:%M:%S%Z")
+      q = QP.parse("cats", "q" => {"dob" => df })
+      cond = q.conditions.first
+      cond[2].should == Date.today
+    end
+        
+    
+  end
+  
+  it "should not allow a field that is not inclded in the properties" do
+    class RestrictedPersonResrouce < MerbRestServer::RestResource
+      resource_class Person
+      resource_name  "restricted_people"
+      expose_fields :id, :name
+    end
+  end
+  
+  it "should typecast values from strings for the parameters"
   it "should only allow fields that have been specified in the rest_resource"
   
   

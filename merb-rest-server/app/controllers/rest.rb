@@ -1,17 +1,15 @@
 class MerbRestServer::Rest < MerbRestServer::Application
-  provides :json
+  only_provides :json, :xml
 
-  before do
-    begin
-      @type = Object.full_const_get(params[:type].camel_case)
-    rescue NameError, NoMethodError
-      throw :halt, display({}, :status => 400)
-    end
-  end
-  
   def options
-    headers["Allow"] = "GET, PUT"
-    display @type.properties.inject({}) {|a,x| a[x.name] = x.type; a }
+    opts = if params[:resource]
+      r = MerbRestServer[params[:resource]]
+      raise NotFound unless r
+      r.options
+    else
+      MerbRestServer.resource_options
+    end
+    display opts
   end
   
   # Index supports:
@@ -24,13 +22,13 @@ class MerbRestServer::Rest < MerbRestServer::Application
   # becomes:
   #   Foo.all(:name.like => "he%")
   def index
-    types = @type.properties.map {|x| x.name}
-    query_type = params[:query_type] || :eql
-    hsh = {}
-    types.each do |type|
-      hsh[type.send(query_type)] = params[type].split(",") if params[type]
-    end
-    display @type.all(hsh)
+    # types = @type.properties.map {|x| x.name}
+    # query_type = params[:query_type] || :eql
+    # hsh = {}
+    # types.each do |type|
+    #   hsh[type.send(query_type)] = params[type].split(",") if params[type]
+    # end
+    # display @type.all(hsh)
   end
   
   def get

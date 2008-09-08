@@ -17,11 +17,20 @@ class Cat
   
   property :id,                 Serial
   property :breed,              String
-  property :dob,                DateTime
+  property :dob,                Date
   property :number_of_kittens,  Integer
   property :mass,               Float
   property :alive,              Boolean
   
+end
+
+class Zoo
+  include DataMapper::Resource
+  property :id,       Serial
+  property :name,     String
+  property :city,     String
+  property :lat,      String
+  property :long,     String
 end
 
 Person.fixture {{

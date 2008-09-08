@@ -22,7 +22,7 @@ module MerbRestServer
       end
     
       def field_names
-        @fields.map{|p| p.keys.first}
+        fields.map{|p| p.keys.first}
       end
         
       def fields
