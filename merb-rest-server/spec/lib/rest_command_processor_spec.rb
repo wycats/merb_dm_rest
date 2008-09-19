@@ -90,8 +90,7 @@ describe MerbRestServer::CommandProcessor do
   it "should convert to yaml" do
     cp = comp(:resource => "people")
     cp.all
-    cp.buggeroff
-    .should == YAML.dump(cp.to_hash)
+    cp.to_yaml.should == YAML.dump(cp.to_hash)
   end
     
 end
