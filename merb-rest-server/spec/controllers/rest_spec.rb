@@ -397,6 +397,21 @@ describe "MerbRestServer::Rest (controller)" do
   # 
   describe "PUT" do
     
+    before(:all) do
+      Person.all.destroy!
+      Cat.all.destroy!
+    end
+    
+    before(:each) do
+      10.of {Person.generate}
+      12.of {Cat.generate}
+    end
+    
+    after(:each) do
+      Person.all.destroy!
+      Cat.all.destroy!
+    end
+    
     describe "routes" do    
       it "should raise on a put for the root" do
         lambda do
@@ -443,11 +458,20 @@ describe "MerbRestServer::Rest (controller)" do
         end
       end
     end
-  #   it "routes PUT /rest/foo/1 to Rest#update :id => 1" do
-  #     controller = put("/rest/foo/1")
-  #     controller.action_name.should == "put"
-  #     controller.params[:id].should == "1"
-  #   end    
+
+    describe "collection updates" do
+      it "should update all people to name 'bill'"
+      it "should raise a MethodNotAllowed if the method has not been allowed for this resource"
+      it "should return the affected collection"
+    end
+    
+    describe "member updates" do
+      it "should update and individual only to have the name 'bill'"
+      it "should raise a MethodNotAllowed if the method has not been allowed for the resource"
+      it "should raise a NotFound if the specified resource cannot be found"
+      it "should return the affected item"      
+    end
+    
   end
   # 
   describe "DELETE" do 
