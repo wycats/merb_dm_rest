@@ -3,6 +3,8 @@ require 'merb-core'
 require 'merb-slices'
 require 'spec'
 require 'dm-sweatshop'
+require 'dm-aggregates'
+
 
 # Add merb_rest_server.rb to the search path
 Merb::Plugins.config[:merb_slices][:auto_register] = true

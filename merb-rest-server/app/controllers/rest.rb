@@ -1,11 +1,13 @@
 class MerbRestServer::Rest < MerbRestServer::Application
   only_provides :json, :xml
+  
+  before :get_resource, :exclude => [:options]
+  before :check_allowed_method, :exclude => [:options]
 
   def options
     opts = if params[:resource]
-      r = MerbRestServer[params[:resource]]
-      raise NotFound unless r
-      r.options
+      get_resource
+      @resource.options
     else
       MerbRestServer.resource_options
     end
@@ -24,7 +26,14 @@ class MerbRestServer::Rest < MerbRestServer::Application
   end
   
   def post
-    ""
+    @result = @resource.resource_class.new(params[params[:resource]])
+    if @result.save
+      self.status =  201
+      command_processor.results = @result
+    else
+      raise Forbidden
+    end
+    display command_processor
   end
   
   def put
@@ -36,6 +45,16 @@ class MerbRestServer::Rest < MerbRestServer::Application
   end
   
   private 
+  def get_resource
+    @resource ||= MerbRestServer[params[:resource]]
+    raise NotFound unless @resource
+    @resource
+  end
+  
+  def check_allowed_method
+    raise MethodNotAllowed unless @resource.rest_method?(request.method)
+  end
+  
   def command_processor
     @command_processor ||= MerbRestServer::CommandProcessor.new(params)
   end

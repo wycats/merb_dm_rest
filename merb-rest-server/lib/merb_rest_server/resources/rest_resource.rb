@@ -66,6 +66,10 @@ module MerbRestServer
         @rest_methods        
       end
       
+      def rest_method?(meth)
+        rest_methods.include?(meth.to_s.upcase)
+      end
+      
       def reset_rest_methods!
         @rest_methods = REST_METHODS.dup
       end

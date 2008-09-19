@@ -4,7 +4,7 @@ module MerbRestServer
   class << self
     
     def [](resource_name)
-      @resources.detect{|r| r.resource_name == resource_name.to_s}
+      resources.detect{|r| r.resource_name == resource_name.to_s}
     end
     
     def resources
@@ -12,14 +12,14 @@ module MerbRestServer
     end
     
     def each
-      @resources.each do |resource|
+      resources.each do |resource|
         yield resource
       end
     end  
     
     def resource_options
       out = {}
-      @resources.each do |r|
+      resources.each do |r|
         out.merge!(r.resource_name => r.options)
       end
       out

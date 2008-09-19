@@ -28,6 +28,7 @@ describe "MerbRestServer::Rest (controller)" do
   before(:all) do
     Person.auto_migrate!
     Cat.auto_migrate!
+    Zoo.auto_migrate!
     (0..100).of { Person.generate }   
     (0..100).of { Cat.generate}
   end
@@ -319,45 +320,7 @@ describe "MerbRestServer::Rest (controller)" do
   #     end
   #   end
   end
-  
-    it "should get all the "
-  # describe "OPTIONS on a resource" do
-  #   describe "when the resource exists" do
-  #     it "returns back the schema in JSON form" do
-  #       @controller = request("/rest/foo/1", {}, :http_accept => "application/json", :request_method => "OPTIONS")
-  #       @controller.body.should == Foo.properties.inject({}) {|a,x| a[x.name] = x.type; a }.to_json        
-  #     end
-  #   end
-  # end
-  # 
-  # describe "GET" do
-  #   describe "when the resource exists" do
-  #     before do
-  #       @controller = get("/rest/foo/1", {}, :http_accept => "application/json")
-  #     end
-  #   
-  #     it "routes GET /rest/foo/1 to Rest#show :id => 1" do
-  #       @controller.action_name.should == "get"
-  #       @controller.params[:id].should == "1"
-  #     end
-  #   
-  #     it "assigns the object as Foo.get!(1)" do
-  #       @controller.assigns(:object).should == Foo.get!(1)
-  #     end
-  #   
-  #     it "returns the object's attributes as JSON" do
-  #       @controller.body.should == Foo.get!(1).to_json
-  #     end
-  #   end
-  #   
-  #   describe "when the resource doesn't exist" do
-  #     it "returns a 404" do
-  #       @controller = get("/rest/foo/10", {}, :http_accept => "application/json")
-  #       @controller.status.should == 404
-  #     end
-  #   end
-  # end
-  # 
+
   describe "POST" do
     
     describe "routes" do    
@@ -393,11 +356,43 @@ describe "MerbRestServer::Rest (controller)" do
         end
       end
     end
-  #   it "routes POST /rest/foo/1 to Rest#update :id => 1" do
-  #     controller = post("/rest/foo/1")
-  #     controller.action_name.should == "post"
-  #     controller.params[:id].should == "1"
-  #   end    
+
+    it "should create a new cat" do
+      lambda do
+        result = post("/rest/cats", :cats => {:breed => "A Breed", :dob => DateTime.now - 6, :number_of_kittens => 0})
+        result.status.should == 201
+      end.should change(Cat, :count).by(1)
+    end
+    
+    it "should create a new person" do
+      lambda do
+        result = post("/rest/people", :people => {:name => "Fred"})
+        result.status.should == 201
+      end.should change(Person, :count).by(1)
+    end
+    
+    it "should raise a 405 if the method is not allowed for this resource" do
+      lambda do
+        post("/rest/zoo", :zoo => {:name => "my zoo", :city => "A city"})
+      end.should raise_error(Merb::Controller::MethodNotAllowed)
+    end
+    
+    it "should not create a resource if the POST method is not allowed" do
+      lambda do
+        lambda do
+          post("/rest/zoo", :zoo => {:name => "my zoo", :city => "A city"})
+        end.should raise_error(Merb::Controller::MethodNotAllowed)
+      end.should_not change(Zoo, :count)     
+    end
+    
+    it "should raise a 403 if unable to create the item" do
+      p = mock("Person", :null_object => true)
+      Person.should_receive(:new).and_return(p)
+      p.should_receive(:save).and_return false
+      lambda do
+        post("/rest/people", :people => {:name => "Fred"})
+      end.should raise_error(Merb::Controller::Forbidden)
+    end
   end
   # 
   describe "PUT" do

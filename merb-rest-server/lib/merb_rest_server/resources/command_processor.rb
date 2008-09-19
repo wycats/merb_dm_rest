@@ -1,6 +1,7 @@
 module MerbRestServer
   class CommandProcessor
     attr_reader :resource, :params
+    attr_accessor :results
     
     def initialize(params)
       @params = params.to_mash
@@ -14,10 +15,6 @@ module MerbRestServer
     
     def first
       @results = klass.first(query)
-    end
-    
-    def results
-      @results
     end
     
     def to_hash
