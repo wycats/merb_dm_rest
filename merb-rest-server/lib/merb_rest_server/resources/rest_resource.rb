@@ -14,7 +14,7 @@ module MerbRestServer
       
       def default_conditions(conditions = {})
         if conditions.empty?
-          @default_conditions = {}
+          @default_conditions ||= {}
         else
           @default_conditions = conditions
         end
@@ -87,10 +87,7 @@ module MerbRestServer
           :methods       => rest_methods
         }
       end
-      
-      def to_xml
-      end 
-      
+
       def inherited(klass)
         MerbRestServer.resources << klass
       end

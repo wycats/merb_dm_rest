@@ -190,7 +190,19 @@ describe "MerbRestServer::Rest (controller)" do
       end
     end
     
-  
+    describe "get" do
+      it "should get all the people" do
+        resource = MerbRestServer["people"]
+        resource 
+        # expected = Merb::Rest::Formats::Xml.encode(People.all)
+        result = get("/rest/people.xml")
+        # result.body.should == 
+      end
+      it "should get all the cats"
+      it "should get the first cat"
+      it "should order the cats"
+      it "should limit the number of cats"
+    end
   
   #   describe "plain index" do
   #     before do

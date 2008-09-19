@@ -9,7 +9,8 @@ if defined?(Merb::Plugins)
   Merb::Slices::register(__FILE__)
   
   Merb.push_path(:lib,File.expand_path(File.join(File.dirname(__FILE__))) / "merb_rest_server" /"resources" )
-
+  require 'merb-rest-formats'
+  require 'yaml'
   
   # Slice configuration - set this in a before_app_loads callback.
   # By default a Slice uses its own layout, so you can swicht to 

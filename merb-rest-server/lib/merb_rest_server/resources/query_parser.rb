@@ -15,6 +15,7 @@ module MerbRestServer
       out[:offset]      = params.delete("offset").to_i  if params["offset"]
       out[:unique]      = params.delete("unique")       unless params["unique"].nil?
       out[:conditions]  = extract_query_conditions(resource, params.delete("q")) if params["q"]
+      out[:conditions].merge!(resource.default_conditions) if out[:conditions]
       out.merge!(extract_fields_for_class!(klass, params))
       out
     end
@@ -23,7 +24,7 @@ module MerbRestServer
       return {} unless params["fields"]
       out = []
       params.delete("fields").each do |field|
-        out << klass.properties[field.to_sym]
+        out << klass.properties[field.to_sym] if klass.properties[field.to_sym]
       end
       {:fields => out.compact}
     end

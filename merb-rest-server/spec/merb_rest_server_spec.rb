@@ -7,7 +7,7 @@ describe "MerbRestServer (module)" do
   # Feel free to remove the specs below
   
   before :all do
-    Merb::Router.prepare { |r| r.add_slice(:MerbRestServer) } if standalone?
+    Merb::Router.prepare { |r| r.slice(:MerbRestServer, :path => "rest", :default_routes => true) } if standalone?
   end
   
   after :all do

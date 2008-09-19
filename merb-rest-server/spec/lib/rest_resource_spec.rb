@@ -32,7 +32,6 @@ describe "MerbRestServer::RestResource" do
     it{@rr.should respond_to(:resource_class)}
     it{@rr.should respond_to(:fields)}
     it{@rr.should respond_to(:expose_fields)}
-    it{@rr.should respond_to(:to_xml)}
     it{@rr.should respond_to(:to_json)}
     it{@rr.should respond_to(:to_yaml)}
     

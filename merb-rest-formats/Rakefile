@@ -4,8 +4,11 @@ require 'rubygems/specification'
 require 'spec'
 require 'spec/rake/spectask'
 require 'date'
+require 'merb-core/version'
+require 'merb-core/test/tasks/spectasks'
+require 'merb-core/tasks/merb_rake_helper'
 
-NAME = "merb_dm_rest_formats"
+NAME = "merb_rest_formats"
 GEM_VERSION = "0.0.1"
 AUTHOR = "Your Name"
 EMAIL = "Your Email"
@@ -35,7 +38,7 @@ end
 
 desc "install the plugin locally"
 task :install => [:package] do
-  sh %{#{sudo} gem install #{install_home} pkg/#{NAME}-#{GEM_VERSION} --no-update-sources}
+  sh %{gem install #{install_home} pkg/#{NAME}-#{GEM_VERSION} --no-update-sources}
 end
 
 desc "create a gemspec file"
