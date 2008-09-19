@@ -212,9 +212,11 @@ describe "MerbRestServer::Rest (controller)" do
         end
       
         it "should limit it to one cat" do
+          expected = Cat.all(:limit => 1)
           cp = comp(:resource => "cats", :limit => 1)
           cp.all
           result = get("/rest/cats.json", :limit => 1)
+          result.assigns(:command_processor).results.should == expected
           result.body.should == cp.to_json
         end
       
