@@ -3,7 +3,7 @@ module MerbRestServer
     attr_reader :resource, :params
     
     def initialize(params)
-      @params = params
+      @params = params.to_mash
       @resource = MerbRestServer[params[:resource]]
       raise ArgumentError, "A resource needs to be specified" unless @resource    
     end

@@ -10,12 +10,24 @@ module MerbRestServer
     
     private 
     def self.extract_params_for_query(klass, params, resource)
+      # copy the id parameter over to the conditions hash
+      if params["id"]
+        params["q"] ||= {}
+        params["q"]["id"] = params["id"]
+      end
+      
       out = {}
       out[:limit]       = params.delete("limit").to_i   if params["limit"]
       out[:offset]      = params.delete("offset").to_i  if params["offset"]
       out[:unique]      = params.delete("unique")       unless params["unique"].nil?
+      out[:order]       = extract_order(resource, params.delete("order")) if params["order"]
+      
       out[:conditions]  = extract_query_conditions(resource, params.delete("q")) if params["q"]
-      out[:conditions].merge!(resource.default_conditions) if out[:conditions]
+      if !resource.default_conditions.blank?
+        out[:conditions] ||= {}
+        out[:conditions].merge!(resource.default_conditions)
+      end
+            
       out.merge!(extract_fields_for_class!(klass, params))
       out
     end
@@ -55,6 +67,16 @@ module MerbRestServer
         out[cond] = typecast_value(resource, field, v)
       end
       out 
+    end
+    
+    def self.extract_order(resource, order = {})
+      out = []
+      order.each do |o|
+        field, order = o.split(".")
+        order ||= "asc"
+        out << field.to_sym.send(order.to_sym)
+      end
+      out
     end
   end
 end

@@ -12,30 +12,15 @@ class MerbRestServer::Rest < MerbRestServer::Application
     display opts
   end
   
-  # Index supports:
-  #   /rest/foo
-  #   /rest/foo?id=1,2
-  #   /rest/foo?name=he%25&query_type=like
-  #
-  # Query type specifies what kind of query to use:
-  #   /rest/foo?name=he%25&query_type=like
-  # becomes:
-  #   Foo.all(:name.like => "he%")
   def index
-    # types = @type.properties.map {|x| x.name}
-    # query_type = params[:query_type] || :eql
-    # hsh = {}
-    # types.each do |type|
-    #   hsh[type.send(query_type)] = params[type].split(",") if params[type]
-    # end
-    # display @type.all(hsh)
+    command_processor.all
+    display command_processor
   end
   
   def get
-    @object = @type.get!(params[:id])
-    display @object
-  rescue DataMapper::ObjectNotFoundError
-    self.status = 404
+    command_processor.first
+    raise NotFound if command_processor.results.nil?
+    display command_processor
   end
   
   def post
@@ -50,4 +35,8 @@ class MerbRestServer::Rest < MerbRestServer::Application
     ""
   end
   
+  private 
+  def command_processor
+    @command_processor ||= MerbRestServer::CommandProcessor.new(params)
+  end
 end
