@@ -456,7 +456,8 @@ describe "MerbRestServer::Rest (controller)" do
 
     describe "collection updates" do
       it "should update all people to name 'bill'" do
-        pending
+        request("/people", :method => :put, :params => {:person => {:name => "bill"}})
+        Person.all.each{|p| p.name.should == "bill"}
       end
       
       it "should raise a MethodNotAllowed if the method has not been allowed for this resource" do
