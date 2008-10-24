@@ -203,4 +203,117 @@ describe "MerbRestServer::RestResource" do
                                       }
     
   end
+
+  describe "default conditions" do
+    
+    before(:each) do
+      Object.class_eval{ remove_const("PersonRestResource") if defined?(PersonRestResource)}
+      class PersonRestResource < MerbRestServer::RestResource
+        resource_class Person
+      end
+    end
+    
+    after(:all) do
+      Object.class_eval{ remove_const("PersonRestResource") if defined?(PersonRestResource)}
+    end
+    
+    it "should allow default conditions to be set" do
+      PersonRestResource.default_conditions {}
+    end
+    
+    it "should provide access to the custom conditions" do
+      PersonRestResource.default_conditions = {:name => "bar"}
+      PersonRestResource.default_conditions.should == {:name => "bar"}
+    end
+    
+    it "should allow a default condition to be a proc" do
+      l = lambda{"foo"}
+      PersonRestResource.default_conditions = {:name => l}
+      PersonRestResource.default_conditions.should == {:name => l}
+    end
+    
+  end
+  
+  describe "custom finder method" do
+    
+    before(:each) do
+      Object.class_eval{ remove_const("PersonRestResource") if defined?(PersonRestResource)}
+      class PersonRestResource < MerbRestServer::RestResource
+        resource_class Person
+      end
+    end
+    
+    after(:all) do
+      Object.class_eval{ remove_const("PersonRestResource") if defined?(PersonRestResource)}
+    end
+    
+    describe "collection finder" do
+      it "should be :all by default" do
+        PersonRestResource.collection_finder.should == :all
+      end
+      
+      it "should allow a custom finder method to be set" do
+        PersonRestResource.collection_finder = :my_custom_collection_finder
+      end
+
+      it "should provide access to the custom finder" do
+        PersonRestResource.collection_finder = :my_custom_collection_finder
+        PersonRestResource.collection_finder.should == :my_custom_collection_finder
+      end
+
+      it "should allow a string for the cutsom finder method" do
+        PersonRestResource.collection_finder = "my_custom_collection_finder"
+        PersonRestResource.collection_finder.should == :my_custom_collection_finder
+      end
+
+      it "should allow a proc to be given for a custom finder method" do
+        lambda do
+          PersonRestResource.collection_finder = lambda{ |params| "I've got access to the params hash" }
+        end.should_not raise_error
+      end
+
+      it "should fail for other object types" do
+        [Object.new, DateTime.now, Object].each do |thing|
+          lambda do
+            PersonRestResource.collection_finder = thing
+          end.should raise_error
+        end
+      end
+    end
+    
+    describe "member finder" do
+      it "should be :first by default" do
+        PersonRestResource.member_finder.should == :first
+      end
+      
+      it "should allow a custom finder method to be set" do
+        PersonRestResource.member_finder = :my_custom_member_finder
+      end
+
+      it "should provide access to the custom finder" do
+        PersonRestResource.member_finder = :my_custom_member_finder
+        PersonRestResource.member_finder.should == :my_custom_member_finder
+      end
+
+      it "should allow a string for the cutsom finder method" do
+        PersonRestResource.member_finder = "my_custom_member_finder"
+        PersonRestResource.member_finder.should == :my_custom_member_finder
+      end
+
+      it "should allow a proc to be given for a custom finder method" do
+        lambda do
+          PersonRestResource.member_finder = lambda{ |params| "I've got access to the params hash" }
+        end.should_not raise_error
+      end
+
+      it "should fail for other object types" do
+        [Object.new, DateTime.now, Object].each do |thing|
+          lambda do
+              PersonRestResource.member_finder = thing
+          end.should raise_error
+        end
+      end
+    end
+  end
+  
 end

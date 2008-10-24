@@ -11,7 +11,17 @@ class Person
     property :nick, String
   end
   
+  def self.my_custom_collection_finder(query = {})
+    all(query)
+  end
   
+  def self.my_custom_member_finder(query = {})
+    first(query)
+  end
+  
+  def self.my_custom_instance_finder(id)
+    get(id)
+  end
   
 end
 

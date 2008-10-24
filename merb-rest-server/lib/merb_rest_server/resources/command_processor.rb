@@ -10,11 +10,21 @@ module MerbRestServer
     end
     
     def all
-      @results = klass.all(query)
+      @results = case resource.collection_finder
+      when Proc
+        resource.collection_finder.call(params)
+      else
+        @results = klass.send(resource.collection_finder, query.merge(resource.default_conditions))
+      end
     end
     
     def first
-      @results = klass.first(query)
+      @results = case resource.member_finder
+      when Proc
+        resource.member_finder.call(params)
+      else
+        klass.send(resource.member_finder, query.merge(resource.default_conditions))
+      end
     end
     
     def to_hash

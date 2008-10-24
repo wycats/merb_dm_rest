@@ -2,6 +2,16 @@ module MerbRestServer
   class RestResource 
     cattr_accessor :resource_class, :resource_name, :fields, :repository
     
+    # These are for setting your own custom finder methods on a resource.  
+    # Use a symbol or string to call a metho.  Use a proc to have it executed in the controller context
+    # You should find your collection in the case of a proc
+    cattr_writer  :collection_finder, :member_finder
+    
+    class_inheritable_accessor :default_conditions
+    @@default_conditions = {}
+    
+    
+
     REST_METHODS = %w(OPTIONS POST PUT GET DELETE).sort.freeze
     @@rest_methods = REST_METHODS.dup
     
@@ -12,15 +22,6 @@ module MerbRestServer
         @fields = fields_from_class(resource_class, repository, field_names)
       end
       
-      def default_conditions(conditions = {})
-        if conditions.empty?
-          @default_conditions ||= {}
-        else
-          @default_conditions = conditions
-        end
-        @default_conditions
-      end
-    
       def field_names
         fields.map{|p| p.keys.first}
       end
@@ -81,6 +82,45 @@ module MerbRestServer
       def block_rest_methods(*methods)
         set_rest_methods (rest_methods.dup - methods.flatten)
       end
+      
+      def default_conditions(conditions = nil)
+        if conditions
+          raise "default conditions must be a Hash" unless conditions.kind_of?(Hash)
+          @@default_conditions = conditions
+        else
+          @@default_conditions ||= {}
+        end
+      end
+      
+      def collection_finder
+        @@collection_finder ||= :all
+      end
+      
+      def collection_finder=(finder)
+        @@collection_finder = case finder
+        when Proc
+          finder
+        when String, Symbol
+          finder.to_s.to_sym
+        else
+          raise "collection_finder must be Symbol, String or Proc"
+        end
+      end
+      
+      def member_finder 
+        @@member_finder ||= :first
+      end
+      
+      def member_finder=(finder)
+        @@member_finder = case finder
+        when Proc
+          finder
+        when String, Symbol
+          finder.to_s.to_sym
+        else
+          raise "member_finder must be Symbol, String or Proc"
+        end
+      end      
       
       # Provides the hash to output to the browser for the options method.
       def options
