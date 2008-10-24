@@ -137,25 +137,30 @@ describe MerbRestServer::CommandProcessor do
       @cp = comp(params)
     end
     
+    after(:each) do
+      RestPersonResource.collection_finder :all
+      RestPersonResource.member_finder :first
+    end
+    
     it "should use the custom finder method for collections" do
       Person.should_receive(:my_custom_collection_finder)
-      RestPersonResource.collection_finder = :my_custom_collection_finder
+      RestPersonResource.collection_finder :my_custom_collection_finder
       @cp.all
     end
     
     it "should use the custom finder method as a proc" do
-      RestPersonResource.collection_finder = lambda{ |params| "In With The Params"}
+      RestPersonResource.collection_finder  {|params| "In With The Params"}
       @cp.all.should == "In With The Params"
     end
     
     it "should use the custom finder method for members" do
       Person.should_receive(:my_custom_member_finder)
-      RestPersonResource.member_finder = :my_custom_member_finder
+      RestPersonResource.member_finder :my_custom_member_finder
       @cp.first
     end
     
     it "should use the custom finder method as a proc" do
-      RestPersonResource.member_finder = lambda{ |params| "In With The Params"}
+      RestPersonResource.member_finder { |params| "In With The Params"}
       @cp.first.should == "In With The Params"
     end
     

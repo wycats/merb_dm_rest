@@ -2,16 +2,10 @@ module MerbRestServer
   class RestResource 
     cattr_accessor :resource_class, :resource_name, :fields, :repository
     
-    # These are for setting your own custom finder methods on a resource.  
-    # Use a symbol or string to call a metho.  Use a proc to have it executed in the controller context
-    # You should find your collection in the case of a proc
-    cattr_writer  :collection_finder, :member_finder
-    
-    class_inheritable_accessor :default_conditions
+    class_inheritable_reader :default_conditions, :member_finder, :collection_finder
     @@default_conditions = {}
+    @@member_finder = @@collection_finder = nil
     
-    
-
     REST_METHODS = %w(OPTIONS POST PUT GET DELETE).sort.freeze
     @@rest_methods = REST_METHODS.dup
     
@@ -92,36 +86,38 @@ module MerbRestServer
         end
       end
       
-      def collection_finder
-        @@collection_finder ||= :all
-      end
-      
-      def collection_finder=(finder)
+      def collection_finder(finder = nil, &block)
+        finder = block if block
+        return @@collection_finder if !finder && @@collection_finder
+        
         @@collection_finder = case finder
         when Proc
           finder
+        when nil
+          :all
         when String, Symbol
-          finder.to_s.to_sym
+          finder.to_sym
         else
-          raise "collection_finder must be Symbol, String or Proc"
+          raise "collection_finder must be Symbol, String or block"
         end
       end
-      
-      def member_finder 
-        @@member_finder ||= :first
-      end
-      
-      def member_finder=(finder)
+    
+      def member_finder(finder = nil, &block)
+        finder = block if block
+        return @@member_finder if !finder && @@member_finder
+        
         @@member_finder = case finder
         when Proc
           finder
+        when nil
+          :first
         when String, Symbol
-          finder.to_s.to_sym
+          finder.to_sym
         else
-          raise "member_finder must be Symbol, String or Proc"
+          raise "member_finder must be Symbol, String or block"
         end
-      end      
-      
+      end
+
       # Provides the hash to output to the browser for the options method.
       def options
         {

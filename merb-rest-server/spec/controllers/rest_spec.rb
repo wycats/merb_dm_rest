@@ -201,60 +201,60 @@ describe "MerbRestServer::Rest (controller)" do
         it "should get all the people in xml" do
           cp = comp(:resource => "people")
           cp.all
-          result = get("/rest/people.xml")
-          result.body.should == cp.to_xml
+          result = request("/rest/people.xml")
+          result.body.to_s.should == cp.to_xml
         end
       
         it "should get all the cats" do
           cp = comp(:resource => "cats")
           cp.all
-          result = get("/rest/cats.json")
-          result.body.should == cp.to_json
+          result = request("/rest/cats.json")
+          result.body.to_s.should == cp.to_json
         end
       
         it "should limit it to one cat" do
           expected = Cat.all(:limit => 1)
           cp = comp(:resource => "cats", :limit => 1)
           cp.all
-          result = get("/rest/cats.json", :limit => 1)
-          result.assigns(:command_processor).results.should == expected
-          result.body.should == cp.to_json
+          result = request("/rest/cats.json", :params => {:limit => 1})
+          JSON.parse(result.body.to_s).should == JSON.parse(cp.to_json)
+          result.body.to_s.should_not be_blank
         end
       
         it "should order the cats" do
           expected = Cat.all(:limit => 5, :order => [:breed.asc])
           cp = comp(:resource => "cats", :order => ["breed"], :limit => "5")
           cp.all
-          result = get("/rest/cats.xml", :limit => 5, :order => [:breed])
-          result.body.should == cp.to_xml
-          result.assigns(:command_processor).results.should == expected
+          result = request("/rest/cats.xml", :params => {:limit => 5, :order => [:breed]})
+          result.body.to_s.should == cp.to_xml
+          result.body.to_s.should_not be_blank
         end
-        
+      
         it "should order the cats in the reverse order" do
           expected = Cat.all(:limit => 5, :order => [:breed.desc])
           cp = comp(:resource => "cats", :order => ["breed.desc"], :limit => "5")
           cp.all
-          result = get("/rest/cats.xml", :limit => 5, :order => ["breed.desc"])
-          result.body.should == cp.to_xml
-          result.assigns(:command_processor).results.should == expected
+          result = request("/rest/cats.xml", :params => {:limit => 5, :order => ["breed.desc"]})
+          result.body.to_s.should == cp.to_xml
+          result.body.to_s.should_not be_blank
         end
         
         it "should order the cats when not in an array" do
           expected = Cat.all(:order => [:breed.desc])
           cp = comp(:resource => "cats", :order => "breed.desc")
           cp.all
-          result = get("/rest/cats.xml", :order => "breed.desc")
-          result.body.should == cp.to_xml
-          result.assigns(:command_processor).results.should == expected
+          result = request("/rest/cats.xml", :params => {:order => "breed.desc"})
+          result.body.to_s.should == cp.to_xml
+          result.body.to_s.should_not be_blank
         end
         
         it "should order by multiple fields" do
           expected = Cat.all(:order => [:breed.desc, :dob.asc])
           cp = comp(:resource => "cats", :order => ["breed.desc", "dob.asc"])
           cp.all
-          result = get("/rest/cats.xml", :order => ["breed.desc", "dob.asc"])
-          result.assigns(:command_processor).results.should == expected
+          result = request("/rest/cats.xml", :params => {:order => ["breed.desc", "dob.asc"]})
           result.body.should == cp.to_xml
+          result.body.to_s.should_not be_blank
         end
         
         it "should return an empty array if there are no cats found" do
@@ -263,9 +263,9 @@ describe "MerbRestServer::Rest (controller)" do
           cp = comp(:resource => "cats", :q => {"breed" => ("a" * 59)})
           cp.all
           cp.results.should be_empty
-          result = get("/rest/cats.xml", :q => {"breed" => ("a" * 59)})
+          result = request("/rest/cats.xml", :params => {:q => {"breed" => ("a" * 59)}})
           result.body.should == cp.to_xml
-          result.assigns(:command_processor).results.should == cat
+          result.body.should_not be_blank
         end
       end
       
@@ -275,16 +275,15 @@ describe "MerbRestServer::Rest (controller)" do
           person = Person.first
           cp = comp(:resource => "people", :id => person.id )
           cp.first
-          result = get("/rest/people/#{person.id}.xml")
-          result.body.should == cp.to_xml
-          result.assigns(:command_processor).results.should == person
+          result = request("/rest/people/#{person.id}.xml")
+          result.body.to_s.should == cp.to_xml
+          result.body.to_s.should_not be_blank
         end
       
         it "should return a 404 if the person is not found" do
           Person.first(:id => 999).should be_nil
-          lambda do
-            result = get("/rest/people/999.json") 
-          end.should raise_error(Merb::Controller::NotFound)
+          result = request("/rest/people/999.json") 
+          result.status.should == Merb::Controller::NotFound.status
         end
       end
     end
