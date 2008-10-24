@@ -112,8 +112,13 @@ describe MerbRestServer::QueryParser do
     end
   end
   
-  it "should typecast values from strings for the parameters"
-  it "should only allow fields that have been specified in the rest_resource"
+  it "should typecast values from strings for the parameters" do
+    pending
+  end
+  
+  it "should only allow fields that have been specified in the rest_resource" do
+    pending
+  end
   
   
 end

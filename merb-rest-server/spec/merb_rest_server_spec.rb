@@ -1,9 +1,7 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 describe "MerbRestServer (module)" do
-  
-  it "should have proper specs"
-  
+
   # Feel free to remove the specs below
   
   before :all do
@@ -45,22 +43,8 @@ describe "MerbRestServer (module)" do
     MerbRestServer.author.should == "Yehuda Katz"
   end
   
-  it "should have :routes and :named_routes properties" do
-    MerbRestServer.routes.should_not be_empty
-  end
-
-  it "should have an url helper method for slice-specific routes" do
-    MerbRestServer.url(:controller => 'main', :action => 'show', :format => 'html').should == "/rest/main/show.html"
-  end
-  
   it "should have a config property (Hash)" do
     MerbRestServer.config.should be_kind_of(Hash)
-  end
-  
-  it "should have bracket accessors as shortcuts to the config" do
-    MerbRestServer[:foo] = 'bar'
-    MerbRestServer[:foo].should == 'bar'
-    MerbRestServer[:foo].should == MerbRestServer.config[:foo]
   end
   
   it "should have a :layout config option set" do

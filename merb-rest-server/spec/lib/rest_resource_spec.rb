@@ -4,7 +4,6 @@ describe "MerbRestServer::RestResource" do
   
   before(:all) do
     @rest_methods = ["OPTIONS", "GET", "PUT", "POST", "DELETE"].sort
-    DataMapper.setup(:tester, "sqlite3::memory:")
     
     class PersonRestResource < MerbRestServer::RestResource
       resource_class Person
@@ -77,7 +76,7 @@ describe "MerbRestServer::RestResource" do
       @rr.rest_methods.should == ["POST"]
     end
     
-    it "should not allow a rest method to be added if the rest method is not acceptable" do
+    it "should not allow a rest method to be added if the rest method is not defined" do
       lambda do
         @rr.add_rest_methods("DESTROY")
       end.should raise_error(ArgumentError)

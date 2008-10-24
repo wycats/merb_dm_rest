@@ -47,7 +47,7 @@ module MerbRestServer
         if name
           @resource_name = name.to_s
         else
-          @resource_name ||= resource_class.storage_names[repository.name]
+          @resource_name ||= resource_class.storage_name(repository.name)
         end
       end
     

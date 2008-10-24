@@ -3,13 +3,16 @@
 class Person 
   include DataMapper::Resource
   property :id, Serial
-  property :name, String
+  property :name, String, :nullable => false
   property :age, Integer
   property :dob, DateTime   
   
   repository(:tester) do
     property :nick, String
   end
+  
+  
+  
 end
 
 class Cat

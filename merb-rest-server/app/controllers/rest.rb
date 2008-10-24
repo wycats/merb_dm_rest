@@ -26,14 +26,18 @@ class MerbRestServer::Rest < MerbRestServer::Application
   end
   
   def post
-    @result = @resource.resource_class.new(params[params[:resource]])
-    if @result.save
-      self.status =  201
-      command_processor.results = @result
-    else
+    begin
+      @result = @resource.resource_class.new(params[params[:resource]])
+      if @result.save
+        self.status =  201
+        command_processor.results = @result
+      else
+        raise Forbidden
+      end
+      display command_processor
+    rescue => e
       raise Forbidden
     end
-    display command_processor
   end
   
   def put

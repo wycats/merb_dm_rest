@@ -5,7 +5,8 @@ describe "MerbRestServer::Rest (controller)" do
   # Feel free to remove the specs below
   
   before :all do
-    Merb::Router.prepare { |r| r.add_slice(:MerbRestServer, :path => "rest", :default_routes => false) } if standalone?
+    Merb::Router.reset!
+    Merb::Router.prepare { add_slice(:merb_rest_server, :path_prefix => "rest") }
   end
   
   after :all do
@@ -87,19 +88,19 @@ describe "MerbRestServer::Rest (controller)" do
     describe "routes" do
       it "should route to the options method from root" do
         result = request_to("/rest", :options)
-        result[:controller].should == "rest"
+        result[:controller].should == "merb_rest_server/rest"
         result[:action].should == "options"
       end
       
       it "should route to #options with a /" do
         result = request_to("/rest/", :options)
-        result[:controller].should == "rest"
+        result[:controller].should == "merb_rest_server/rest"
         result[:action].should == "options"
       end
       
       it "should route to #options with a resource" do
         result = request_to("/rest/zoo", :options)
-        result[:controller].should == "rest"
+        result[:controller].should == "merb_rest_server/rest"
         result[:action].should == "options"
       end
       
@@ -113,31 +114,30 @@ describe "MerbRestServer::Rest (controller)" do
     describe "format payloads" do
       [:json].each do |fmt|
         it "should return the #{fmt} payload for all resources" do
-          c = dispatch_to(MerbRestServer::Rest, :options, :format => fmt)
-          string_to_hash(c.body, fmt).should == @raw
+          c = request("/rest/index.#{fmt}", :method => "options")
+          string_to_hash(c.body.to_s, fmt).should == @raw
         end
     
         it "should return the #{fmt} payload for the zoo resource" do
-          c = dispatch_to(MerbRestServer::Rest, :options, :resource => "zoo", :format => fmt)
-          string_to_hash(c.body, fmt).should == @zoo
+          c = request("/rest/zoo.#{fmt}", :method => "options")
+          string_to_hash(c.body.to_s, fmt).should == @zoo
         end
       
         it "should return th #{fmt} payload for the people resource" do
-          c = dispatch_to(MerbRestServer::Rest, :options, :resource => "people", :format => fmt)
-          string_to_hash(c.body, fmt).should == @people
+          c = request("/rest/people.#{fmt}", :method =>"options")
+          string_to_hash(c.body.to_s, fmt).should == @people
         end
       
         it "should return the #{fmt} payload for the cats resource" do
-          c = dispatch_to(MerbRestServer::Rest, :options, :resource => "cats", :format => fmt)
-          string_to_hash(c.body, fmt).should == @cats
+          c = request("/rest/cats.#{fmt}", :method => "options")
+          string_to_hash(c.body.to_s, fmt).should == @cats
         end
       end    
     end # format payloads   
     
     it "should raise a NotFound if a resource is requested that does not exist" do
-      lambda do
-        dispatch_to(MerbRestServer::Rest, :options, :resource => "not_real", :format => :json)
-      end.should raise_error(Merb::Controller::NotFound)
+      r = request("/rest/not_real.json", :method => "options")
+      r.status.should == 404
     end
     
   end
@@ -155,7 +155,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "index"
             result[:resource].should == r
             result[:format].should == fmt
@@ -168,7 +168,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}/"].each do |url|
             result = request_to(url)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "index"
             result[:resource].should == r
             result[:format].should == fmt
@@ -181,7 +181,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}/42#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "get"
             result[:resource].should == r
             result[:format].should == fmt
@@ -334,7 +334,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url, :post)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "post"
             result[:resource].should == r
             result[:format].should == fmt
@@ -347,7 +347,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}/"].each do |url|
             result = request_to(url, :post)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "post"
             result[:resource].should == r
             result[:format].should == fmt
@@ -359,39 +359,35 @@ describe "MerbRestServer::Rest (controller)" do
 
     it "should create a new cat" do
       lambda do
-        result = post("/rest/cats", :cats => {:breed => "A Breed", :dob => DateTime.now - 6, :number_of_kittens => 0})
-        result.status.should == 201
+        r = request("/rest/cats", :method => "post", :params => {:cats => {:breed => "A Breed", :dob => DateTime.now - 6, :number_of_kittens => 0}})
+        r.status.should == 201
       end.should change(Cat, :count).by(1)
     end
     
     it "should create a new person" do
       lambda do
-        result = post("/rest/people", :people => {:name => "Fred"})
-        result.status.should == 201
+        r = request("/rest/people", :method => "post", :params => {:people => {:name => "Fred"}})
+        r.status.should == 201
       end.should change(Person, :count).by(1)
     end
     
     it "should raise a 405 if the method is not allowed for this resource" do
-      lambda do
-        post("/rest/zoo", :zoo => {:name => "my zoo", :city => "A city"})
-      end.should raise_error(Merb::Controller::MethodNotAllowed)
+      r = request("/rest/zoo", :method => "post", :params => {:zoo => {:name =>"my zoo", :city => "A city"}})
+      r.status.should == Merb::Controller::MethodNotAllowed.status
     end
     
     it "should not create a resource if the POST method is not allowed" do
       lambda do
-        lambda do
-          post("/rest/zoo", :zoo => {:name => "my zoo", :city => "A city"})
-        end.should raise_error(Merb::Controller::MethodNotAllowed)
+        r = request("/rest/zoo", :method => "post", :params => {:zoo => {:name => "my zoo", :city => "A city"}})
+        r.status.should == Merb::Controller::MethodNotAllowed.status
       end.should_not change(Zoo, :count)     
     end
     
     it "should raise a 403 if unable to create the item" do
-      p = mock("Person", :null_object => true)
-      Person.should_receive(:new).and_return(p)
-      p.should_receive(:save).and_return false
       lambda do
-        post("/rest/people", :people => {:name => "Fred"})
-      end.should raise_error(Merb::Controller::Forbidden)
+        r = request("/rest/people", :method => "post", :params => {:people => {:age => 5}})
+        r.status.should == Merb::Controller::Forbidden.status
+      end.should_not change(Person, :count)
     end
   end
   # 
@@ -423,7 +419,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url, :put)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "put"
             result[:resource].should == r
             result[:format].should == fmt
@@ -436,7 +432,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}/"].each do |url|
             result = request_to(url, :put)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "put"
             result[:resource].should == r
             result[:format].should == fmt
@@ -449,7 +445,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}/42#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url, :put)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "put"
             result[:resource].should == r
             result[:format].should == fmt
@@ -460,16 +456,36 @@ describe "MerbRestServer::Rest (controller)" do
     end
 
     describe "collection updates" do
-      it "should update all people to name 'bill'"
-      it "should raise a MethodNotAllowed if the method has not been allowed for this resource"
-      it "should return the affected collection"
+      it "should update all people to name 'bill'" do
+        pending
+      end
+      
+      it "should raise a MethodNotAllowed if the method has not been allowed for this resource" do
+        pending
+      end
+      
+      it "should return the affected collection" do
+        pending 
+      end
     end
     
     describe "member updates" do
-      it "should update and individual only to have the name 'bill'"
-      it "should raise a MethodNotAllowed if the method has not been allowed for the resource"
-      it "should raise a NotFound if the specified resource cannot be found"
-      it "should return the affected item"      
+      it "should update and individual only to have the name 'bill'" do
+        pending
+      end
+      
+      it "should raise a MethodNotAllowed if the method has not been allowed for the resource" do
+        pending
+      end
+      
+      it "should raise a NotFound if the specified resource cannot be found" do
+        pending
+      end
+      
+      it "should return the affected item" do
+        pending
+      end
+      
     end
     
   end
@@ -487,7 +503,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url, :delete)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "delete"
             result[:resource].should == r
             result[:format].should == fmt
@@ -500,7 +516,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}#{fmt.blank? ? "" : ".#{fmt}"}/"].each do |url|
             result = request_to(url, :delete)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "delete"
             result[:resource].should == r
             result[:format].should == fmt
@@ -513,7 +529,7 @@ describe "MerbRestServer::Rest (controller)" do
         contruct_urls do |r, fmt|
           ["/rest/#{r}/42#{fmt.blank? ? "" : ".#{fmt}"}"].each do |url|
             result = request_to(url, :delete)
-            result[:controller].should == "rest"
+            result[:controller].should == "merb_rest_server/rest"
             result[:action].should == "delete"
             result[:resource].should == r
             result[:format].should == fmt

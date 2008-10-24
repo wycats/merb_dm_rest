@@ -57,26 +57,27 @@ if defined?(Merb::Plugins)
     #   to avoid potential conflicts with global named routes.
     def self.setup_router(scope)
       # example of a named route
-      scope.to(:controller => "rest") do |rest|
+      scope.to(:controller => "rest") do |r|
         
         # GET
-        rest.match(%r{/:resource(\.:format)?$},     :method => :get).to(:action => "index")
-        rest.match(%r{/:resource/:id(\.:format)?$}, :method => :get).to(:action => "get")
+        r.match("/:resource(.:format)",       :method => :get).to(:action => "index"     )
+        r.match("/:resource/:id(.:format)",   :method => :get).to(:action => "get"       )
         
         # PUT
-        rest.match(%r{/:resource(\.:format)?$},     :method => :put).to(:action => "put")
-        rest.match(%r{/:resource/:id(\.:format)?$}, :method => :put).to(:action => "put")
+        r.match("/:resource(.:format)",       :method => :put).to(:action => "put"       )
+        r.match("/:resource/:id(.:format)",       :method => :put).to(:action => "put"       )  
         
         # POST
-        rest.match(%r{/:resource(\.:format)?$},     :method => :post).to(:action => "post")
+        r.match("/:resource(.:format)",       :method => :post).to(:action => "post"     )
         
         # DELETE
-        rest.match(%r{/:resource(\.:format)?$},     :method => :delete).to(:action => "delete")
-        rest.match(%r{/:resource/:id(\.:format)?$}, :method => :delete).to(:action => "delete")
+        r.match("/:resource(.:format)",       :method => :delete).to(:action => "delete" )
+        r.match("/:resource/:id(.:format)",   :method => :delete).to(:action => "delete" )
         
         # OPTIONS
-        rest.match(%r{(/|/index)?(\.:format)?$}, :method => :options).to(:action => "options")
-        rest.match(%r{/:resource(\.:format)?$}, :method => :options).to(:action => "options")
+        r.match("/",                          :method => :options).to(:action => "options"  )
+        r.match("/index(.:format)",           :method => :options).to(:action => "options"  )
+        r.match("/:resource(.:format)",       :method => :options).to(:action => "options"  )
       end
       # scope.match(%r{\/(.*?)(.*)}, :method => :option).to(:action => "option", :resource => "path[1]")
       # scope.match(%r{(.*)}).defer_to do |req, params|
