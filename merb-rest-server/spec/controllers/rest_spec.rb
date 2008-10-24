@@ -7,6 +7,46 @@ describe "MerbRestServer::Rest (controller)" do
   before :all do
     Merb::Router.reset!
     Merb::Router.prepare { add_slice(:merb_rest_server, :path_prefix => "rest") }
+    Merb::Authentication.default_strategy_order.clear
+    
+    class Capturer
+      cattr_accessor :captures
+      @@captures = []
+    end
+    
+    class TestAuth < Merb::Authentication::Strategy
+      def run!
+        Capturer.captures << TestAuth
+        "in" unless params[:run_through]
+      end
+    end
+    
+    class TestAuth2 < Merb::Authentication::Strategy
+      def run!
+        Capturer.captures << TestAuth2
+        nil
+      end
+    end
+        
+    
+    class SingleAuthenticatedZoo < MerbRestServer::RestResource
+      resource_class Zoo
+      resource_name "auth-single-zoo"
+      authenticate_with TestAuth
+    end
+    
+    class DefaultAuthenticatedZoo < MerbRestServer::RestResource
+      resource_class Zoo
+      resource_name "auth-default-zoo"
+      authenticate_with :default
+    end
+    
+    class NoneAuthenticatedZoo < MerbRestServer::RestResource
+      resource_class Zoo
+      resource_name "auth-none-zoo"
+      authenticate_with :none
+    end
+        
   end
   
   after :all do
@@ -22,6 +62,12 @@ describe "MerbRestServer::Rest (controller)" do
       resource_name "zoo"
       rest_methods "GET"
     end
+
+    Merb::Authentication.default_strategy_order.clear
+    Object.class_eval do
+      remove_const(:TestAuth) if defined?(TestAuth)
+      remove_const(:TestAuth2) if defined?(TestAuth2)
+    end
   end
 
   require File.dirname(__FILE__) + '/../spec_helper'    
@@ -32,6 +78,11 @@ describe "MerbRestServer::Rest (controller)" do
     Zoo.auto_migrate!
     (0..100).of { Person.generate }   
     (0..100).of { Cat.generate}
+  end
+  
+  
+  before(:each) do
+    Capturer.captures.clear
   end
     
   def contruct_urls
@@ -115,7 +166,7 @@ describe "MerbRestServer::Rest (controller)" do
       [:json].each do |fmt|
         it "should return the #{fmt} payload for all resources" do
           c = request("/rest/index.#{fmt}", :method => "options")
-          string_to_hash(c.body.to_s, fmt).should == @raw
+          string_to_hash(c.body.to_s, fmt) == MerbRestServer.resource_options
         end
     
         it "should return the #{fmt} payload for the zoo resource" do
@@ -140,6 +191,23 @@ describe "MerbRestServer::Rest (controller)" do
       r.status.should == 404
     end
     
+    describe "Authentication" do
+      
+      it "should be authenticated with the default strategies" do
+        r = request("/rest/auth-default-zoo", :method => "options", :params => {:run_through => true})
+        Capturer.captures.should == [TestAuth, TestAuth2]
+      end
+      
+      it "should be authenticated with a single strategy" do
+        r = request("/rest/auth-single-zoo", :method => "options")
+        Capturer.captures.should == [TestAuth]
+      end
+      
+      it "should be authenticated with no strategies" do
+        r = request("/rest/auth-none-zoo", :method => "options")
+        Capturer.captures.should be_blank
+      end
+    end
   end
 
   describe "GET index" do
@@ -193,20 +261,26 @@ describe "MerbRestServer::Rest (controller)" do
     
     describe "get" do
       
+      before(:each) do
+        @request = fake_request
+      end
+      
       def comp(params)
         MerbRestServer::CommandProcessor.new(params)
       end
       
       describe "collections" do
         it "should get all the people in xml" do
-          cp = comp(:resource => "people")
+          @request.params[:resource] = "people"
+          cp = comp(@request)
           cp.all
           result = request("/rest/people.xml")
           result.body.to_s.should == cp.to_xml
         end
       
         it "should get all the cats" do
-          cp = comp(:resource => "cats")
+          @request.params[:resource] = "cats"
+          cp = comp(@request)
           cp.all
           result = request("/rest/cats.json")
           result.body.to_s.should == cp.to_json
@@ -214,7 +288,8 @@ describe "MerbRestServer::Rest (controller)" do
       
         it "should limit it to one cat" do
           expected = Cat.all(:limit => 1)
-          cp = comp(:resource => "cats", :limit => 1)
+          @request.params.merge!(:resource => "cats", :limit => 1)
+          cp = comp(@request)
           cp.all
           result = request("/rest/cats.json", :params => {:limit => 1})
           JSON.parse(result.body.to_s).should == JSON.parse(cp.to_json)
@@ -223,7 +298,8 @@ describe "MerbRestServer::Rest (controller)" do
       
         it "should order the cats" do
           expected = Cat.all(:limit => 5, :order => [:breed.asc])
-          cp = comp(:resource => "cats", :order => ["breed"], :limit => "5")
+          @request.params.merge! :resource => "cats", :order => ["breed"], :limit => "5"
+          cp = comp(@request)
           cp.all
           result = request("/rest/cats.xml", :params => {:limit => 5, :order => [:breed]})
           result.body.to_s.should == cp.to_xml
@@ -232,7 +308,8 @@ describe "MerbRestServer::Rest (controller)" do
       
         it "should order the cats in the reverse order" do
           expected = Cat.all(:limit => 5, :order => [:breed.desc])
-          cp = comp(:resource => "cats", :order => ["breed.desc"], :limit => "5")
+          @request.params.merge! :resource => "cats", :order => ["breed.desc"], :limit => "5"
+          cp = comp(@request)
           cp.all
           result = request("/rest/cats.xml", :params => {:limit => 5, :order => ["breed.desc"]})
           result.body.to_s.should == cp.to_xml
@@ -241,7 +318,8 @@ describe "MerbRestServer::Rest (controller)" do
         
         it "should order the cats when not in an array" do
           expected = Cat.all(:order => [:breed.desc])
-          cp = comp(:resource => "cats", :order => "breed.desc")
+          @request.params.merge! :resource => "cats", :order => "breed.desc"
+          cp = comp(@request)
           cp.all
           result = request("/rest/cats.xml", :params => {:order => "breed.desc"})
           result.body.to_s.should == cp.to_xml
@@ -250,7 +328,8 @@ describe "MerbRestServer::Rest (controller)" do
         
         it "should order by multiple fields" do
           expected = Cat.all(:order => [:breed.desc, :dob.asc])
-          cp = comp(:resource => "cats", :order => ["breed.desc", "dob.asc"])
+          @request.params.merge! :resource => "cats", :order => ["breed.desc", "dob.asc"]
+          cp = comp(@request)
           cp.all
           result = request("/rest/cats.xml", :params => {:order => ["breed.desc", "dob.asc"]})
           result.body.should == cp.to_xml
@@ -260,7 +339,8 @@ describe "MerbRestServer::Rest (controller)" do
         it "should return an empty array if there are no cats found" do
           cat = Cat.all(:breed => ("a" * 59))
           cat.should have(0).items
-          cp = comp(:resource => "cats", :q => {"breed" => ("a" * 59)})
+          @request.params.merge! :resource => "cats", :q => {"breed" => ("a" * 59)}
+          cp = comp(@request)
           cp.all
           cp.results.should be_empty
           result = request("/rest/cats.xml", :params => {:q => {"breed" => ("a" * 59)}})
@@ -273,7 +353,9 @@ describe "MerbRestServer::Rest (controller)" do
       
         it "should get a specific person" do
           person = Person.first
-          cp = comp(:resource => "people", :id => person.id )
+          request = fake_request
+          request.params.merge! :resource => "people", :id => person.id 
+          cp = comp(request)
           cp.first
           result = request("/rest/people/#{person.id}.xml")
           result.body.to_s.should == cp.to_xml
@@ -288,36 +370,6 @@ describe "MerbRestServer::Rest (controller)" do
       end
     end
   
-  #   describe "plain index" do
-  #     before do
-  #       @controller = get("/rest/foo", {}, :http_accept => "application/json")
-  #     end
-  #   
-  #     it "routes GET /rest/foo to Rest#index" do
-  #       @controller.action_name.should == "index"
-  #     end
-  #   
-  #     it "returns all of the resources" do
-  #       @controller.body.should == Foo.all.to_json
-  #     end
-  #   end
-  #   
-  #   describe "index with query parameters" do
-  #     it "provides the objects that match ids" do
-  #       controller = get("/rest/foo", {:id => "1,2"}, :http_accept => "application/json")
-  #       controller.body.should == Foo.all(:id => [1,2]).to_json
-  #     end
-  #     
-  #     it "provides the objects that match other params" do
-  #       controller = get("/rest/foo", {:name => "Mock1"}, :http_accept => "application/json")
-  #       controller.body.should == Foo.all(:name => "Mock1").to_json
-  #     end
-  #     
-  #     it "supports providing the type of query" do
-  #       controller = get("/rest/foo", {:name => "Mock%", :query_type => "like"}, :http_accept => "application/json")
-  #       controller.body.should == Foo.all(:name.like => "Mock%").to_json
-  #     end
-  #   end
   end
 
   describe "POST" do
@@ -456,8 +508,13 @@ describe "MerbRestServer::Rest (controller)" do
 
     describe "collection updates" do
       it "should update all people to name 'bill'" do
+        pending
         request("/people", :method => :put, :params => {:person => {:name => "bill"}})
         Person.all.each{|p| p.name.should == "bill"}
+      end
+      
+      it "should only update a single users name" do
+        pending
       end
       
       it "should raise a MethodNotAllowed if the method has not been allowed for this resource" do

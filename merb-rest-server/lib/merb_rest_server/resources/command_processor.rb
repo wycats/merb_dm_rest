@@ -1,10 +1,11 @@
 module MerbRestServer
   class CommandProcessor
-    attr_reader :resource, :params
+    attr_reader :resource, :params, :request
     attr_accessor :results
     
-    def initialize(params)
-      @params = params.to_mash
+    def initialize(request)
+      @request = request
+      @params = request.params
       @resource = MerbRestServer[params[:resource]]
       raise ArgumentError, "A resource needs to be specified" unless @resource    
     end
@@ -12,7 +13,7 @@ module MerbRestServer
     def all
       @results = case resource.collection_finder
       when Proc
-        resource.collection_finder.call(params)
+        resource.collection_finder.call(request, query)
       else
         @results = klass.send(resource.collection_finder, query.merge(resource.default_conditions))
       end
@@ -21,7 +22,7 @@ module MerbRestServer
     def first
       @results = case resource.member_finder
       when Proc
-        resource.member_finder.call(params)
+        resource.member_finder.call(request, query)
       else
         klass.send(resource.member_finder, query.merge(resource.default_conditions))
       end

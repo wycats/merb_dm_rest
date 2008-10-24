@@ -24,10 +24,7 @@ describe "MerbRestServer::RestResource" do
     
     it{@rr.should respond_to(:rest_methods)}
     it{@rr.should_not respond_to(:rest_methods=)}
-    it{@rr.should respond_to(:add_rest_methods)}
-    it{@rr.should respond_to(:block_rest_methods)}
     it{@rr.should respond_to(:resource_name)}
-    it{@rr.should respond_to(:resource_name=)}
     it{@rr.should respond_to(:resource_class)}
     it{@rr.should respond_to(:fields)}
     it{@rr.should respond_to(:expose_fields)}
@@ -54,57 +51,7 @@ describe "MerbRestServer::RestResource" do
       @rr.rest_methods.clear
       @rr.rest_methods.should be_empty
     end
-    
-    it "should allow a user to add a rest method" do
-      @rr.rest_methods.clear
-      @rr.rest_methods.should be_empty
-      @rr.add_rest_methods("POST", "GET")
-      @rr.rest_methods.should == ["POST", "GET"]
-    end
-    
-    it "should ignore duplicate rest methods" do
-      @rr.rest_methods.clear
-      @rr.add_rest_methods("POST", "GET")
-      @rr.rest_methods.should == ["POST", "GET"]
-      @rr.add_rest_methods("POST")
-      @rr.rest_methods.should == ["POST", "GET"]
-    end
-    
-    it "should not add a nil or blank to the rest_methods" do
-      @rr.rest_methods.clear
-      @rr.add_rest_methods("POST", nil)
-      @rr.rest_methods.should == ["POST"]
-    end
-    
-    it "should not allow a rest method to be added if the rest method is not defined" do
-      lambda do
-        @rr.add_rest_methods("DESTROY")
-      end.should raise_error(ArgumentError)
-    end
-    
-    it "should accept an array or rest methods" do
-      @rr.rest_methods.clear
-      @rr.add_rest_methods(["POST", "GET", "DELETE"])
-      @rr.rest_methods.should == ["POST", "GET", "DELETE"]
-    end
-    
-    it "should allow a user to block a rest method" do
-      @rr.rest_methods.should_not be_blank
-      %w(DELETE PUT).each do |meth|
-        @rr.rest_methods.should include(meth)
-      end
-      @rr.block_rest_methods("DELETE", "PUT")
-      %w(DELETE PUT).each do |meth|
-        @rr.rest_methods.should_not include(meth)
-      end
-    end
-    
-    it "should block an array of rest methods" do
-      @rr.block_rest_methods(["DELETE", "PUT"])
-      %w(DELETE PUT).each do |meth|
-        @rr.rest_methods.should_not include(meth)
-      end
-    end
+
 
   end
 
@@ -116,13 +63,13 @@ describe "MerbRestServer::RestResource" do
     end
     
     it "should allow you to set the resource name" do
-      @rr.resource_name = "persona"
-      @rr.resource_name.should == :persona
+      @rr.resource_name "persona"
+      @rr.resource_name.should == "persona"
     end
     
     it "should allow you to set the resource name with a symbol" do
-      @rr.resource_name = :personne
-      @rr.resource_name.should == :personne
+      @rr.resource_name :personne
+      @rr.resource_name.should == "personne"
     end
     
     it "should allow you to set the repository" do
@@ -136,9 +83,9 @@ describe "MerbRestServer::RestResource" do
     end
     
     it "should not allow you to set the resource name to anything but a string" do
-      [nil, ["fake"], {:not => "right"}, 341].each do |rn|
+      [["fake"], {:not => "right"}, 341].each do |rn|
         lambda do
-          @rr.resource_name = rn
+          @rr.resource_name rn
         end.should raise_error(ArgumentError)
       end
     end
@@ -318,4 +265,32 @@ describe "MerbRestServer::RestResource" do
     end
   end
   
+  describe "merb-auth integration" do
+    
+    before(:each) do
+      Object.class_eval{ remove_const("Person2RestResource") if defined?(Person2RestResource)}
+      class Person2RestResource < MerbRestServer::RestResource
+        resource_class Person
+      end
+    end
+    
+    after(:all) do
+      Object.class_eval{ remove_const("Person2RestResource") if defined?(Person2RestResource)}
+    end
+    
+    it "should allow you to specify authentication strategeis" do
+      Person2RestResource.authenticate_with "OpenID", "BasicAuth"
+      Person2RestResource.authenticate_with.should == %w(OpenID BasicAuth)
+    end    
+    
+    it "should allow you to set the strategy to :default" do
+      Person2RestResource.authenticate_with :default
+      Person2RestResource.authenticate_with.should == :default
+    end
+    
+    it "should allow you to set the strategy to :none" do
+      Person2RestResource.authenticate_with :none
+      Person2RestResource.authenticate_with.should == :none
+    end
+  end
 end

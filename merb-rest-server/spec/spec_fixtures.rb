@@ -46,6 +46,17 @@ class Zoo
   property :long,     String
 end
 
+class Merb::Authentication
+  def fetch_user(session_data)
+    Marshal.load(session_data)
+  end
+  
+  def store_user(user)
+    Marshal.dump(user)
+  end
+end
+
+
 Person.fixture {{
   :name => /\w+/.gen,
   :age  => /\d{1,5}/.gen.to_i,

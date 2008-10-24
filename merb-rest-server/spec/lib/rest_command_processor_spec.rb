@@ -34,33 +34,37 @@ describe MerbRestServer::CommandProcessor do
   end
   
   it "should take a params hash and get all matches" do
-    params = {:resource => "people"}
-    cp = comp(params)
+    request = fake_request
+    request.params.merge! :resource => "people"
+    cp = comp(request)
     cp.all
     cp.results.should == Person.all    
   end
   
   it "should take a params hash and get the first match" do
-    params = {:resource => "people"}
-    cp = comp(params)
+    request = fake_request
+    request.params.merge! :resource => "people"
+    cp = comp(request)
     cp.first.should == Person.first
     cp.results.should == Person.first
   end
 
   it "should convert the results to a hash when a single object" do
-    params = {:resource => "people"}
+    request = fake_request
+    request.params.merge! :resource => "people"
     person = Person.first
     expected = {}
     person.attributes.each do |name, value|
       expected[name] = value
     end
-    cp = comp(params)
+    cp = comp(request)
     cp.first
     cp.to_hash.should == expected
   end
   
   it "should convert the restults to a hash when an collection of objects" do
-    params = {:resource => "people"}
+    request = fake_request
+    request.params.merge! :resource => "people"
     people = Person.all
     expected = {"people" => []}
     people.each do |p|
@@ -70,31 +74,39 @@ describe MerbRestServer::CommandProcessor do
       end
       expected["people"] << tmp
     end
-    cp= comp(params)
+    cp= comp(request)
     cp.all
     cp.to_hash.should == expected
   end
   
   it "should convert the results to xml" do
-    cp = comp(:resource => "people")
+    request = fake_request
+    request.params.merge! :resource => "people"
+    cp = comp(request)
     cp.all
     cp.to_xml.should ==  Merb::Rest::Formats::Xml.encode(cp.to_hash)    
   end
   
   it "should convert the results to json" do
-    cp = comp(:resource => "people")
+    request = fake_request
+    request.params.merge! :resource => "people"
+    cp = comp(request)
     cp.all
     cp.to_json.should == JSON.generate(cp.to_hash)
   end
   
   it "should convert the results to marshalled ruby" do
-    cp = comp(:resource => "people")    
+    request = fake_request
+    request.params.merge! :resource => "people"
+    cp = comp(request)
     cp.all
     cp.to_rb.should == Marshal.dump(cp.to_hash)
   end
   
   it "should convert to yaml" do
-    cp = comp(:resource => "people")
+    request = fake_request
+    request.params.merge! :resource => "people"
+    cp = comp(request)
     cp.all
     cp.to_yaml.should == YAML.dump(cp.to_hash)
   end
@@ -106,6 +118,10 @@ describe MerbRestServer::CommandProcessor do
       Person.create(:name => "Wilma", :age => 25)
       Person.create(:name => "Homer", :age => 38)
       Person.create(:name => "Marge", :age => 30)
+      
+      request = fake_request
+      request.params.merge! :resource => "people"
+      @cp = comp(request)
     end    
     
     it "should not affect direct access to the resource" do
@@ -115,17 +131,13 @@ describe MerbRestServer::CommandProcessor do
     
     it "should apply the default conditions to all" do
       RestPersonResource.default_conditions :name.like => "Hom%" 
-      params = {:resource => "people"}
-      cp = comp(params)
-      cp.all
-      cp.results.should == Person.all(:name.like => "Hom%")
+      @cp.all
+      @cp.results.should == Person.all(:name.like => "Hom%")
     end
     
     it "should apply the default conditions to first" do
       RestPersonResource.default_conditions :name.like => "Hom%"
-      params = {:resource => "people"}
-      cp = comp(params)
-      cp.first.should == Person.first(:name.like => "Hom%")
+      @cp.first.should == Person.first(:name.like => "Hom%")
     end
       
   end
@@ -133,8 +145,9 @@ describe MerbRestServer::CommandProcessor do
   describe "custom finder method" do
     
     before(:each) do
-      params = {:resource => "people"}
-      @cp = comp(params)
+      request = fake_request
+      request.params.merge! :resource => "people"
+      @cp = comp(request)
     end
     
     after(:each) do
@@ -149,7 +162,7 @@ describe MerbRestServer::CommandProcessor do
     end
     
     it "should use the custom finder method as a proc" do
-      RestPersonResource.collection_finder  {|params| "In With The Params"}
+      RestPersonResource.collection_finder  {|request, query| "In With The Params"}
       @cp.all.should == "In With The Params"
     end
     
@@ -160,7 +173,7 @@ describe MerbRestServer::CommandProcessor do
     end
     
     it "should use the custom finder method as a proc" do
-      RestPersonResource.member_finder { |params| "In With The Params"}
+      RestPersonResource.member_finder { |request, query| "In With The Params"}
       @cp.first.should == "In With The Params"
     end
     

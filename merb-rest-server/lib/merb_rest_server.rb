@@ -9,8 +9,10 @@ if defined?(Merb::Plugins)
   Merb::Slices::register(__FILE__)
   
   Merb.push_path(:lib,File.expand_path(File.join(File.dirname(__FILE__))) / "merb_rest_server" /"resources" )
+  load_dependency 'merb-auth-core'
   require 'merb-rest-formats'
   require 'yaml'
+
   
   # Slice configuration - set this in a before_app_loads callback.
   # By default a Slice uses its own layout, so you can swicht to 
@@ -65,7 +67,7 @@ if defined?(Merb::Plugins)
         
         # PUT
         r.match("/:resource(.:format)",       :method => :put).to(:action => "put"       )
-        r.match("/:resource/:id(.:format)",       :method => :put).to(:action => "put"       )  
+        r.match("/:resource/:id(.:format)",   :method => :put).to(:action => "put"       )  
         
         # POST
         r.match("/:resource(.:format)",       :method => :post).to(:action => "post"     )
@@ -79,24 +81,6 @@ if defined?(Merb::Plugins)
         r.match("/index(.:format)",           :method => :options).to(:action => "options"  )
         r.match("/:resource(.:format)",       :method => :options).to(:action => "options"  )
       end
-      # scope.match(%r{\/(.*?)(.*)}, :method => :option).to(:action => "option", :resource => "path[1]")
-      # scope.match(%r{(.*)}).defer_to do |req, params|
-      #   m = req.path.match(%r{^/rest/?(.*?)(?:\.(.*))?$})
-      #   parts = m[1].split("/")
-      #   format = m[2]
-      #   nests = parts.map { [parts.shift, parts.shift] }
-      #   nests << [parts.shift] unless parts.empty?
-      #   
-      #   params = req.params.merge({ :controller => "merb_rest_server/rest", 
-      #     :type => nests.last.first,
-      #     :nests => nests[0..-2],
-      #     :format => format})
-      #     
-      #   params.merge!(:action => nests.last.last ? req.method.to_s : "index")
-      #   params.merge!(:id => nests.last.last) if nests.last.last
-      #   params
-      # end
-      # scope.match('/index.:format').to(:controller => 'main', :action => 'index').name(:merb_rest_server_index)
     end
     
   end
