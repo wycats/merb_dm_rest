@@ -22,7 +22,7 @@ module MerbRestServer
   # MerbRestServer being a slice means that you can install the slice into your application
   # declare some RestResource(s) and your application will automatically provide those resources
   # restfully.  These are accessible to other ruby programs, javascript, anything that can access 
-  # a web page.
+  # your server.
   # 
   # A DM model may be present in many different resources, each one exposing different ammounts of
   # iformation, at a different path, with different protection or with different finders for example.
